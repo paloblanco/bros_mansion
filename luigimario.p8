@@ -15,9 +15,18 @@ end
 
 
 function _update60()
-	move_luigi()
-	
-	update_globals() -- don't play with this
+	if gamestart then
+	 move_luigi()
+	 update_globals() -- don't play with this
+	else
+	 if btnp(4) or btnp(5) then
+	 	gamestart = true
+	 end
+	end
+	if gamend then
+		_draw()
+	 stop()
+	end
 end
 
 
@@ -37,13 +46,15 @@ function _draw()
 	}
 	print("luigi: "..hearts[luigi.health],2,113,3)
 	print("⧗: "..timer_sec,94,113,7)
-	print("coins: 
+	print("coins: "..coins,82,119,10)
 end
 
 function make_globals()
 	timer = 0
 	timer_sec = 0
 	coins = 0
+	gamestart = false
+	gameend = false
 end
 
 function update_globals()
@@ -121,6 +132,7 @@ function draw_shadow(x,y)
 	spr(7,x,y)
 	palt()
 end
+
 __gfx__
 00000000008888000033373000000000000000000000000000000000ffffffff0066660000011110000000000000000008e008e0000000000000000000000000
 00000000088887880333333308c88c80088c8c800313313003313130ff0000ff06777760001cccc100000000000990008888888e000000000000000000000000
