@@ -10,14 +10,14 @@ function _init()
 	
 	bro_speed = .75 -- higher is faster!
 	ghost_speed = .5
-		
+	ghost_rate = 120 --higher means less ghosts
+	coin_rate = 300
 end
 
 
 function _update60()
 	if gamestart then
-	 move_luigi()
-	 update_globals() -- don't play with this
+		update_gameplay()
 	else
 	 if btnp(4) or btnp(5) then
 	 	gamestart = true
@@ -29,6 +29,25 @@ function _update60()
 	end
 end
 
+function update_gameplay()
+	if rnd(ghost_rate) < 1 then
+		make_boo()
+	end
+ 
+ move_luigi()
+ move_boos()
+ 
+ collide_boos()
+ 
+ -- make ghosts happen more often
+ if timer_sec%5==0 and timer==0 then
+ 	ghost_rate = ghost_rate*0.66
+ end 
+ 
+ update_globals() -- don't play with this
+ 
+ if (luigi.health < 1) gamend=true
+end
 
 function _draw()
 	-- draw the room
@@ -37,24 +56,112 @@ function _draw()
 	
 	-- draw characters and stuff
 	draw_luigi()
-	
+	draw_boos()
 	-- status bar
-	hearts = {
-	"♥",
-	"♥♥",
-	"♥♥♥",
-	}
-	print("luigi: "..hearts[luigi.health],2,113,3)
-	print("⧗: "..timer_sec,94,113,7)
-	print("coins: "..coins,82,119,10)
+	rectfill(0,112,128,128,0)
+	rect(0,112,127,127,6)
+	luigihearts = "luigi: "
+	for i=1,luigi.health,1 do
+	 luigihearts = luigihearts.."♥"
+	end
+	--print("luigi: "..hearts[luigi.health],2,114,3)
+	print(luigihearts,2,114,3)
+	print("⧗: "..timer_sec,94,114,7)
+	print("coins: "..coin_count,82,120,10)
+	
+	-- draw title if starting up
+	if not gamestart then
+		xs = 34
+		ys = 40
+		oprint("luigi",xs,ys,3,7)
+		oprint("&",xs+26,ys,1,7)
+		oprint("mario's",xs+36,ys,8,7)
+		oprint("mini mansion",xs+8,ys+8,1,7)
+	end
+	
+	-- end game
+	if gamend then
+	 xs = 40
+		ys = 40
+		oprint("game over",xs,ys,0,7)
+		fscore = coin_count+timer_sec
+		oprint("final score: "..fscore,xs-10,ys+12,10,0)
+	end
+end
+
+function draw_boos()
+	for b in all(boos) do
+		draw_shadow(b.x,b.y)
+		spr(b.s,b.x,b.y-2)
+	end
+end
+
+function collide_boos()
+ if (luigi.timer > 0) return
+ for b in all(boos) do
+  if luigi.x+6 > b.x+1 and
+  	luigi.x+1 < b.x+6 and
+  	luigi.y+6 > b.y+1 and
+  	luigi.y+1 < b.y+6 then
+  		kill_boo(b)
+  		hurt_luigi()
+  	end
+ end
+end
+
+function hurt_luigi()
+	luigi.health = luigi.health-1
+	luigi.timer = 60
+end
+
+function kill_boo(b)
+	del(boos,b)
+end
+
+function move_boos()
+	for b in all(boos) do
+		b.x = b.x + b.dx
+		b.y = b.y + b.dy
+		if b.x < -12 or b.x > 130 or
+			b.y < -12 or b.y > 130 then
+			del(boos,b)
+		end
+	end
+end
+
+function make_boo()
+	local boo = {}
+	boo.s = 8 -- sprite no.
+	if rnd() < 0.5 then
+		boo.dx = 0
+		boo.dy = ghost_speed * sgn(rnd()-.5)
+		if boo.dy>0 then
+			boo.y = -8
+		else
+			boo.y= 128
+		end
+		boo.x = 8 + rnd(104)
+	else
+		boo.dy = 0
+		boo.dx = ghost_speed * sgn(rnd()-.5)
+		if boo.dx>0 then
+			boo.x = -8
+		else
+			boo.x= 128
+		end
+		boo.y = 24 + rnd(80)	
+	end
+	add(boos,boo)
 end
 
 function make_globals()
 	timer = 0
 	timer_sec = 0
-	coins = 0
+	coins = {}
+	coin_count = 0
 	gamestart = false
 	gameend = false
+	boos = {}
 end
 
 function update_globals()
@@ -64,8 +171,8 @@ end
 
 function make_luigi()
 	luigi = {}
-	luigi.x = 32
-	luigi.y = 64
+	luigi.x = 50
+	luigi.y = 76
 	luigi.headsprite = 2
 	luigi.bodysprite = 5
 	luigi.frame = 0 -- dont touch this
@@ -108,11 +215,17 @@ function move_luigi()
 	if (luigi.y < 24) luigi.y = 24
 	if (luigi.y > 96) luigi.y = 96
 	
+	-- timer
+	luigi.timer = max(0,luigi.timer-1)
+	
 end
 
 function draw_luigi()
 	--shadow
 	draw_shadow(luigi.x,luigi.y+1)
+	--if hurt, flash
+	if (luigi.timer%8>3) return
+	
 	--animate
 	local yup = 0
 	if luigi.moved then
@@ -131,6 +244,15 @@ function draw_shadow(x,y)
 	palt(15,true)
 	spr(7,x,y)
 	palt()
+end
+
+function oprint(str,x,y,c,co)
+	for xx=-1,1,1 do
+		for yy=-1,1,1 do
+			print(str,x+xx,y+yy,co)
+		end
+	end
+	print(str,x,y,c)
 end
 
 __gfx__
