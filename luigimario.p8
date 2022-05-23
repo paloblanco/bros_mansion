@@ -5,7 +5,6 @@ function _init()
 	make_luigi()
 	make_globals() -- dont play with this
 	
-	
 	-- game variables
 	
 	bro_speed = .75 -- higher is faster!
@@ -22,13 +21,15 @@ function _update60()
 	if gamestart then
 		update_gameplay()
 	else
-	 if btnp(4) or btnp(5) then
-	 	gamestart = true
-	 end
+		if btnp(4) or btnp(5) then
+			gamestart = true
+		end
 	end
 	if gamend then
 		_draw()
-	 stop()
+	 	stop()
+	elseif not mario then
+		check_p2()
 	end
 end
 
@@ -37,19 +38,23 @@ function update_gameplay()
 		make_boo()
 	end
  
- move_luigi()
- move_boos()
- check_vacuum(luigi)
- collide_boos()
+	move_bro(luigi)
+	if (mario) move_bro(mario)
+	move_boos()
+	check_vacuum(luigi)
+	if (mario) check_vacuum(mario)
+	collide_boos(luigi)
+	if (mario) collide_boos(mario)
  
- -- make ghosts happen more often
- if timer_sec%5==0 and timer==0 then
- 	ghost_rate = ghost_rate*0.66
- end 
+	-- make ghosts happen more often
+	if timer_sec%5==0 and timer==0 then
+		ghost_rate = ghost_rate*0.66
+	end 
  
- update_globals() -- don't play with this
+ 	update_globals() -- don't play with this
  
- if (luigi.health < 1) gamend=true
+ 	if (luigi.health < 1) gamend=true
+	if (mario and mario.health < 1) gamend=true
 end
 
 function _draw()
@@ -58,7 +63,8 @@ function _draw()
 	map()
 	
 	-- draw characters and stuff
-	draw_luigi()
+	draw_bro(luigi)
+	if (mario) draw_bro(mario)
 	draw_boos()
 	-- status bar
 	rectfill(0,112,128,128,0)
@@ -92,6 +98,15 @@ function _draw()
 	end
 end
 
+function check_p2()
+	for ix=0,5,1 do
+		if btnp(ix,1) then
+			make_mario()
+			return
+		end 
+	end
+end
+
 function draw_boos()
 	for b in all(boos) do
 		draw_shadow(b.x,b.y)
@@ -106,22 +121,22 @@ function draw_boos()
 	end
 end
 
-function collide_boos()
- if (luigi.timer > 0) return
+function collide_boos(bro)
+ if (bro.timer > 0) return
  for b in all(boos) do
-  if luigi.x+6 > b.x+1 and
-  	luigi.x+1 < b.x+6 and
-  	luigi.y+6 > b.y+1 and
-  	luigi.y+1 < b.y+6 then
+  if bro.x+6 > b.x+1 and
+  	bro.x+1 < b.x+6 and
+  	bro.y+6 > b.y+1 and
+  	bro.y+1 < b.y+6 then
   		kill_boo(b)
-  		hurt_luigi()
+  		hurt_bro(bro)
   	end
  end
 end
 
-function hurt_luigi()
-	luigi.health = luigi.health-1
-	luigi.timer = 60
+function hurt_bro(bro)
+	bro.health = bro.health-1
+	bro.timer = 60
 end
 
 function kill_boo(b)
@@ -189,61 +204,72 @@ function update_globals()
 	if (timer == 0) timer_sec  = timer_sec + 1
 end
 
-function make_luigi()
-	luigi = {}
-	luigi.x = 50
-	luigi.y = 76
-	luigi.sprite = 1
-	luigi.health = 3
+function return_bro()
+	local bro = {}
+	bro.x = 50
+	bro.y = 76
+	bro.sprite = 1
+	bro.health = 3
 	
 	-- dont edit these ones
-	luigi.moved = false
-	luigi.faceleft = false
-	luigi.frame = 0 
-	luigi.framenow = 0
-	luigi.timer = 0
-	luigi.vacuum = false
-	luigi.vacx = 1
-	luigi.vacy = 0
+	bro.moved = false
+	bro.faceleft = false
+	bro.frame = 0 
+	bro.framenow = 0
+	bro.timer = 32
+	bro.vacuum = false
+	bro.vacx = 1
+	bro.vacy = 0
+	bro.player = 0 --  player index, for multiplayer
+	return bro
+end
+
+function make_luigi()
+	luigi = return_bro()
+	luigi.sprite = 1
 end
 
 function make_mario()
+	mario = return_bro()
+	mario.sprite = 3
+	mario.player = 1
+	mario.x = mario.x + 10
 end
 
-function move_luigi()
+function move_bro(bro)
 	local dx = 0
 	local dy = 0
-	luigi.moved = false
-	luigi.vacuum = false
+	bro.moved = false
+	bro.vacuum = false
 
-	if (btn(0)) dx = -1
-	if (btn(1)) dx = 1
-	if (btn(2)) dy = -1
-	if (btn(3)) dy = 1
-	if (btn(4)) luigi.vacuum = true
+	if (btn(0,bro.player)) dx = -1
+	if (btn(1,bro.player)) dx = 1
+	if (btn(2,bro.player)) dy = -1
+	if (btn(3,bro.player)) dy = 1
+	if (btn(4,bro.player)) bro.vacuum = true
 	
-	if (dx!=0 or dy!=0) luigi.moved=true
-	if (dx > 0 and not luigi.vacuum) luigi.faceleft = false
-	if (dx < 0 and not luigi.vacuum) luigi.faceleft = true
+	if (dx!=0 or dy!=0) bro.moved=true
+	if (dx > 0 and not bro.vacuum) bro.faceleft = false
+	if (dx < 0 and not bro.vacuum) bro.faceleft = true
 		
 	if abs(dx) + abs(dy) > 1 then
 		dx = dx * .707
 		dy = dy * .707
 	end
 	
-	if btnp(4) then
-		luigi.vacx=dx
-		luigi.vacy=dy
+	if btnp(4,bro.player) then
+		bro.vacx=dx
+		bro.vacy=dy
 		if dx==0 and dy==0 then
-			if luigi.faceleft then
-				luigi.vacx = -1
+			if bro.faceleft then
+				bro.vacx = -1
 			else
-				luigi.vacx = 1
+				bro.vacx = 1
 			end
 		end
 	end
 	
-	if luigi.vacuum then
+	if bro.vacuum then
 		dx = dx * vacuum_speed
 		dy = dy * vacuum_speed
 	end
@@ -251,20 +277,20 @@ function move_luigi()
 	dx = dx * bro_speed
 	dy = dy * bro_speed
 	
-	luigi.x = luigi.x + dx
-	luigi.y = luigi.y + dy
+	bro.x = bro.x + dx
+	bro.y = bro.y + dy
 	
 	-- out of bounds code
-	if (luigi.x < 8) luigi.x = 8
-	if (luigi.x > 112) luigi.x = 112
-	if (luigi.y < 24) luigi.y = 24
-	if (luigi.y > 96) luigi.y = 96
+	if (bro.x < 8) bro.x = 8
+	if (bro.x > 112) bro.x = 112
+	if (bro.y < 24) bro.y = 24
+	if (bro.y > 96) bro.y = 96
 	
 	-- timer
-	luigi.timer = max(0,luigi.timer-1)
+	bro.timer = max(0,bro.timer-1)
 	
 	-- sounds
-	if luigi.moved and timer%10==5 then
+	if bro.moved and timer%10==5 then
 		sfx(0)
 	end
 		
@@ -281,7 +307,6 @@ function check_vacuum(bro)
   	cy+d > b.y and
   	cy < b.y+8 then
   		hurt_boo(b)
---  		hurt_luigi()
   	end
  end
 end
@@ -306,29 +331,29 @@ function draw_vacuum(bro)
 	end
 end
 
-function draw_luigi()
+function draw_bro(bro)
 	--shadow
-	draw_shadow(luigi.x,luigi.y+1)
+	draw_shadow(bro.x,bro.y+1)
 	
 	--vacuum particles
-	if (luigi.vacuum) draw_vacuum(luigi)
+	if (bro.vacuum) draw_vacuum(bro)
 	
 	--if hurt, flash
-	if (luigi.timer%8>3) return
+	if (bro.timer%8>3) return
 	
 	--animate
 	local yup = 0
-	if luigi.moved or luigi.vacuum then
+	if bro.moved or bro.vacuum then
 		if timer%10 > 4 then
 			yup=1
 		end
 	end
 
-	spr(luigi.sprite+yup,luigi.x,luigi.y-2-8,1,2,luigi.faceleft)
+	spr(bro.sprite+yup,bro.x,bro.y-2-8,1,2,bro.faceleft)
 	
 	--vacuum
-	if luigi.vacuum then
-		spr(16,luigi.x,luigi.y-2-yup,1,1,luigi.faceleft)
+	if bro.vacuum then
+		spr(16,bro.x,bro.y-2-yup,1,1,bro.faceleft)
 	end
 end
 
