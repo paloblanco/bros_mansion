@@ -10,7 +10,6 @@ function _init()
 	bro_speed = .75 -- higher is faster!
 	ghost_speed = .5
 	ghost_rate = 120 --higher means less ghosts
-	coin_rate = 300
 	vacuum_range = 16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
@@ -54,7 +53,8 @@ function update_gameplay()
 	
 	-- make ghosts happen more often
 	if timer_sec%5==0 and timer==0 then
-		ghost_rate = ghost_rate*0.66
+		ghost_rate = ghost_rate - 2
+		ghost_speed = ghost_speed + .025
 	end 
  
  -- gamend?
@@ -240,9 +240,10 @@ function make_boo()
 	boo.s = 33 -- sprite no.
 	boo.health=20
 	boo.hurt=false
+	local speed = ghost_speed * (1.1-rnd(0.2))
 	if rnd() < 0.5 then
 		boo.dx = 0
-		boo.dy = ghost_speed * sgn(rnd()-.5)
+		boo.dy = speed * sgn(rnd()-.5)
 		if boo.dy>0 then
 			boo.y = -8
 		else
@@ -251,7 +252,7 @@ function make_boo()
 		boo.x = 8 + rnd(104)
 	else
 		boo.dy = 0
-		boo.dx = ghost_speed * sgn(rnd()-.5)
+		boo.dx = speed * sgn(rnd()-.5)
 		if boo.dx>0 then
 			boo.x = -8
 		else
