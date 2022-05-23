@@ -2,9 +2,8 @@ pico-8 cartridge // http://www.pico-8.com
 version 35
 __lua__
 function _init()
-	make_luigi()
 	make_globals() -- dont play with this
-	
+	make_luigi()
 	
 	-- game variables
 	
@@ -22,13 +21,15 @@ function _update60()
 	if gamestart then
 		update_gameplay()
 	else
-	 if btnp(4) or btnp(5) then
-	 	gamestart = true
-	 end
+		if btnp(4) or btnp(5) then
+			gamestart = true
+		end
 	end
 	if gamend then
 		_draw()
-	 stop()
+	 	stop()
+	elseif not mario then
+		check_p2()
 	end
 end
 
@@ -37,19 +38,33 @@ function update_gameplay()
 		make_boo()
 	end
  
- move_luigi()
- move_boos()
- check_vacuum(luigi)
- collide_boos()
+	for bro in all(bros) do
+		if (bro.alive) move_bro(bro)
+	end
+	
+	move_boos()
+	
+	for bro in all(bros) do
+		if bro.alive then
+			check_vacuum(bro)
+			collide_boos(bro)
+			collide_items(bro)
+		end
+	end
+	
+	-- make ghosts happen more often
+	if timer_sec%5==0 and timer==0 then
+		ghost_rate = ghost_rate*0.66
+	end 
  
- -- make ghosts happen more often
- if timer_sec%5==0 and timer==0 then
- 	ghost_rate = ghost_rate*0.66
- end 
+ -- gamend?
+ gamend=true
+ for bro in all(bros) do
+ 	if (bro.alive) gamend = false
+ end
  
- update_globals() -- don't play with this
- 
- if (luigi.health < 1) gamend=true
+	update_globals() -- don't play with this
+	
 end
 
 function _draw()
@@ -58,17 +73,24 @@ function _draw()
 	map()
 	
 	-- draw characters and stuff
-	draw_luigi()
+	for bro in all(bros) do
+		if (bro.alive) draw_bro(bro)
+	end
+	
 	draw_boos()
+	draw_items()
 	-- status bar
 	rectfill(0,112,128,128,0)
 	rect(0,112,127,127,6)
-	luigihearts = "luigi: "
-	for i=1,luigi.health,1 do
-	 luigihearts = luigihearts.."♥"
+	
+	for bro in all(bros) do
+		brohearts = bro.name..": "
+		for i=1,bro.health,1 do
+			brohearts = brohearts.."♥"
+		end
+		print(brohearts,2,114+6*bro.player,bro.color)
 	end
-	--print("luigi: "..hearts[luigi.health],2,114,3)
-	print(luigihearts,2,114,3)
+
 	print("⧗: "..timer_sec,94,114,7)
 	print("coins: "..coin_count,82,120,10)
 	
@@ -92,6 +114,15 @@ function _draw()
 	end
 end
 
+function check_p2()
+	for ix=0,5,1 do
+		if btnp(ix,1) then
+			make_mario()
+			return
+		end 
+	end
+end
+
 function draw_boos()
 	for b in all(boos) do
 		draw_shadow(b.x,b.y)
@@ -106,26 +137,58 @@ function draw_boos()
 	end
 end
 
-function collide_boos()
- if (luigi.timer > 0) return
+function draw_items()
+	for i in all(items) do
+		draw_shadow(i.x,i.y)
+		spr(i.sprite,i.x,i.y-2)
+	end
+end
+
+function collide_items(bro)
+	for i in all(items) do
+		if bro.x+6 > i.x+1 and
+  	bro.x+1 < i.x+6 and
+  	bro.y+6 > i.y+1 and
+  	bro.y+1 < i.y+6 then
+  	if (i.name=="coin") coin_count += 1
+  	if (i.name=="bigcoin") coin_count += 10
+  	if (i.name=="heart") bro.health += 1
+  	if i.name=="1up" then
+  	 for bro in all(bros) do
+  	 	if (not bro.alive) then
+  	 		bro.alive=true
+  	 		bro.health=1
+  	 		bro.timer=50
+  	 	end
+  	 end
+  	end
+  	del(items,i)
+  end
+	end
+end
+
+function collide_boos(bro)
+ if (bro.timer > 0) return
  for b in all(boos) do
-  if luigi.x+6 > b.x+1 and
-  	luigi.x+1 < b.x+6 and
-  	luigi.y+6 > b.y+1 and
-  	luigi.y+1 < b.y+6 then
+  if bro.x+6 > b.x+1 and
+  	bro.x+1 < b.x+6 and
+  	bro.y+6 > b.y+1 and
+  	bro.y+1 < b.y+6 then
   		kill_boo(b)
-  		hurt_luigi()
+  		hurt_bro(bro)
   	end
  end
 end
 
-function hurt_luigi()
-	luigi.health = luigi.health-1
-	luigi.timer = 60
+function hurt_bro(bro)
+	bro.health = bro.health-1
+	bro.timer = 60
+	if (bro.health < 1) bro.alive=false
 end
 
 function kill_boo(b)
 	del(boos,b)
+	make_item(b.x,b.y)
 end
 
 function move_boos()
@@ -144,6 +207,32 @@ function move_boos()
 			del(boos,b)
 		end
 	end
+end
+
+function make_item(x,y)
+	local item = {}
+	local chance = rnd()
+	item.x=x
+	item.y=y
+	if chance < 0.9 then
+		item.name = "coin"
+		item.sprite = 48
+	elseif chance < .95 then
+		item.name = "bigcoin"
+		item.sprite = 50
+	else
+		item.name = "heart"
+		item.sprite = 49
+		for bro in all(bros) do
+			if not bro.alive then
+				if rnd() < 0.4 then
+					item.name = "1up"
+					item.sprite = 51
+				end
+			end
+		end
+	end
+	add(items,item)
 end
 
 function make_boo()
@@ -181,6 +270,8 @@ function make_globals()
 	gamestart = false
 	gameend = false
 	boos = {}
+	bros = {}
+	items = {}
 	poke(0x5f5c, 255)
 end
 
@@ -189,61 +280,81 @@ function update_globals()
 	if (timer == 0) timer_sec  = timer_sec + 1
 end
 
-function make_luigi()
-	luigi = {}
-	luigi.x = 50
-	luigi.y = 76
-	luigi.sprite = 1
-	luigi.health = 3
+function return_bro()
+	local bro = {}
+	bro.name = 'luigi'
+	bro.color = 3
+	bro.alive = true
+	bro.x = 50
+	bro.y = 76
+	bro.sprite = 1
+	bro.health = 3
 	
 	-- dont edit these ones
-	luigi.moved = false
-	luigi.faceleft = false
-	luigi.frame = 0 
-	luigi.framenow = 0
-	luigi.timer = 0
-	luigi.vacuum = false
-	luigi.vacx = 1
-	luigi.vacy = 0
+	bro.moved = false
+	bro.faceleft = false
+	bro.frame = 0 
+	bro.framenow = 0
+	bro.timer = 32
+	bro.vacuum = false
+	bro.vacx = 1
+	bro.vacy = 0
+	bro.player = 0 --  player index, for multiplayer
+	return bro
+end
+
+function make_luigi()
+	luigi = return_bro()
+	luigi.sprite = 1
+	luigi.name = 'luigi'
+	luigi.color = 3
+	add(bros,luigi)
 end
 
 function make_mario()
+	mario = return_bro()
+	mario.sprite = 3
+	mario.player = 1
+	mario.name = 'mario'
+	mario.color = 8
+	mario.x = mario.x + 10
+	add(bros,mario)
 end
 
-function move_luigi()
+function move_bro(bro)
 	local dx = 0
 	local dy = 0
-	luigi.moved = false
-	luigi.vacuum = false
+	bro.moved = false
+	bro.vacuum = false
 
-	if (btn(0)) dx = -1
-	if (btn(1)) dx = 1
-	if (btn(2)) dy = -1
-	if (btn(3)) dy = 1
-	if (btn(4)) luigi.vacuum = true
+	if (btn(0,bro.player)) dx = -1
+	if (btn(1,bro.player)) dx = 1
+	if (btn(2,bro.player)) dy = -1
+	if (btn(3,bro.player)) dy = 1
+	if (btn(4,bro.player)) bro.vacuum = true
 	
-	if (dx!=0 or dy!=0) luigi.moved=true
-	if (dx > 0 and not luigi.vacuum) luigi.faceleft = false
-	if (dx < 0 and not luigi.vacuum) luigi.faceleft = true
+	if (dx!=0 or dy!=0) bro.moved=true
+	if (dx > 0 and not bro.vacuum) bro.faceleft = false
+	if (dx < 0 and not bro.vacuum) bro.faceleft = true
 		
 	if abs(dx) + abs(dy) > 1 then
 		dx = dx * .707
 		dy = dy * .707
 	end
 	
-	if btnp(4) then
-		luigi.vacx=dx
-		luigi.vacy=dy
+	if btnp(4,bro.player) then
+		bro.vacx=dx
+		bro.vacy=dy
 		if dx==0 and dy==0 then
-			if luigi.faceleft then
-				luigi.vacx = -1
+			if bro.faceleft then
+				bro.vacx = -1
 			else
-				luigi.vacx = 1
+				bro.vacx = 1
 			end
 		end
 	end
 	
-	if luigi.vacuum then
+	if bro.vacuum then
 		dx = dx * vacuum_speed
 		dy = dy * vacuum_speed
 	end
@@ -251,20 +362,20 @@ function move_luigi()
 	dx = dx * bro_speed
 	dy = dy * bro_speed
 	
-	luigi.x = luigi.x + dx
-	luigi.y = luigi.y + dy
+	bro.x = bro.x + dx
+	bro.y = bro.y + dy
 	
 	-- out of bounds code
-	if (luigi.x < 8) luigi.x = 8
-	if (luigi.x > 112) luigi.x = 112
-	if (luigi.y < 24) luigi.y = 24
-	if (luigi.y > 96) luigi.y = 96
+	if (bro.x < 8) bro.x = 8
+	if (bro.x > 112) bro.x = 112
+	if (bro.y < 24) bro.y = 24
+	if (bro.y > 96) bro.y = 96
 	
 	-- timer
-	luigi.timer = max(0,luigi.timer-1)
+	bro.timer = max(0,bro.timer-1)
 	
 	-- sounds
-	if luigi.moved and timer%10==5 then
+	if bro.moved and timer%10==5 then
 		sfx(0)
 	end
 		
@@ -281,7 +392,6 @@ function check_vacuum(bro)
   	cy+d > b.y and
   	cy < b.y+8 then
   		hurt_boo(b)
---  		hurt_luigi()
   	end
  end
 end
@@ -306,29 +416,29 @@ function draw_vacuum(bro)
 	end
 end
 
-function draw_luigi()
+function draw_bro(bro)
 	--shadow
-	draw_shadow(luigi.x,luigi.y+1)
+	draw_shadow(bro.x,bro.y+1)
 	
 	--vacuum particles
-	if (luigi.vacuum) draw_vacuum(luigi)
+	if (bro.vacuum) draw_vacuum(bro)
 	
 	--if hurt, flash
-	if (luigi.timer%8>3) return
+	if (bro.timer%8>3) return
 	
 	--animate
 	local yup = 0
-	if luigi.moved or luigi.vacuum then
+	if bro.moved or bro.vacuum then
 		if timer%10 > 4 then
 			yup=1
 		end
 	end
 
-	spr(luigi.sprite+yup,luigi.x,luigi.y-2-8,1,2,luigi.faceleft)
+	spr(bro.sprite+yup,bro.x,bro.y-2-8,1,2,bro.faceleft)
 	
 	--vacuum
-	if luigi.vacuum then
-		spr(16,luigi.x,luigi.y-2-yup,1,1,luigi.faceleft)
+	if bro.vacuum then
+		spr(16,bro.x,bro.y-2-yup,1,1,bro.faceleft)
 	end
 end
 
@@ -373,14 +483,14 @@ f000000f67771716101c1c1100000000000000000000000000000000000000000000000000000000
 f000000f6777887601cccc1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ff0000ff06778860001cc10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ffffffff006666000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000008e008e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000990008888888e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-009aa9008888888e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-09aaaa902888888e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-09aaaa902888888e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-009aa900028888800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00099000002888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000008e008e00099990000333300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000990008888888e09aaaa9003377330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+009aa9008888888e9aa9aaa973377337000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+09aaaa902888888e9aa99aa973333337000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+09aaaa902888888e9aa99aa933333333000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+009aa900028888809aa9aaa907177170000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000990000028880009aaaa9007177170000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000280000099990000777700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 2e6dee6dee6dee6dee6dee6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 2e6dee6dee6dee6dee6dee6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 d26dee6dee6dee6dee6dee2d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -414,7 +524,7 @@ de6d626dee6dee6dee2ed6ed00000000000000000000000000000000000000000000000000000000
 e26dee6dee6dee6dee6dee2e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 2e6dee6dee6dee6dee6dee6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __gff__
-0000000000000000000000000000000000000000000101010101010101010100000000010101010100010101010101000000010101010101010101010101010001010101010101010101010101010100010101010101010101010101010101000100010101010101010101010101010001010101010101010101010101010100
+0000000000000000000000000000000000000000000000000000000000010100000000000100000000000000000101000000000001000000000000000001010001010100000000000000000000000000010101000000000000000000000000000101010000000000000000000000000001010100000000000000000000000000
 0000010101010101010101010101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 4141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
