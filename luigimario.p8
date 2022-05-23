@@ -2,8 +2,8 @@ pico-8 cartridge // http://www.pico-8.com
 version 35
 __lua__
 function _init()
-	make_luigi()
 	make_globals() -- dont play with this
+	make_luigi()
 	
 	-- game variables
 	
@@ -38,23 +38,25 @@ function update_gameplay()
 		make_boo()
 	end
  
-	move_bro(luigi)
-	if (mario) move_bro(mario)
+	for bro in all(bros) do
+		move_bro(bro)
+	end
+	
 	move_boos()
-	check_vacuum(luigi)
-	if (mario) check_vacuum(mario)
-	collide_boos(luigi)
-	if (mario) collide_boos(mario)
- 
+	
+	for bro in all(bros) do
+		check_vacuum(bro)
+		collide_boos(bro)
+		if (bro.health < 1) gamend = true
+	end
+	
 	-- make ghosts happen more often
 	if timer_sec%5==0 and timer==0 then
 		ghost_rate = ghost_rate*0.66
 	end 
  
  	update_globals() -- don't play with this
- 
- 	if (luigi.health < 1) gamend=true
-	if (mario and mario.health < 1) gamend=true
+	
 end
 
 function _draw()
@@ -63,18 +65,23 @@ function _draw()
 	map()
 	
 	-- draw characters and stuff
-	draw_bro(luigi)
-	if (mario) draw_bro(mario)
+	for bro in all(bros) do
+		draw_bro(bro)
+	end
+	
 	draw_boos()
 	-- status bar
 	rectfill(0,112,128,128,0)
 	rect(0,112,127,127,6)
-	luigihearts = "luigi: "
-	for i=1,luigi.health,1 do
-	 luigihearts = luigihearts.."♥"
+	
+	for bro in all(bros) do
+		brohearts = bro.name..": "
+		for i=1,bro.health,1 do
+			brohearts = brohearts.."♥"
+		end
+		print(brohearts,2,114+6*bro.player,bro.color)
 	end
-	--print("luigi: "..hearts[luigi.health],2,114,3)
-	print(luigihearts,2,114,3)
+
 	print("⧗: "..timer_sec,94,114,7)
 	print("coins: "..coin_count,82,120,10)
 	
@@ -196,6 +203,7 @@ function make_globals()
 	gamestart = false
 	gameend = false
 	boos = {}
+	bros = {}
 	poke(0x5f5c, 255)
 end
 
@@ -206,6 +214,8 @@ end
 
 function return_bro()
 	local bro = {}
+	bro.name = 'luigi'
+	bro.color = 3
 	bro.x = 50
 	bro.y = 76
 	bro.sprite = 1
@@ -227,13 +237,19 @@ end
 function make_luigi()
 	luigi = return_bro()
 	luigi.sprite = 1
+	luigi.name = 'luigi'
+	luigi.color = 3
+	add(bros,luigi)
 end
 
 function make_mario()
 	mario = return_bro()
 	mario.sprite = 3
 	mario.player = 1
+	mario.name = 'mario'
+	mario.color = 8
 	mario.x = mario.x + 10
+	add(bros,mario)
 end
 
 function move_bro(bro)
