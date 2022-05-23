@@ -12,6 +12,9 @@ function _init()
 	ghost_speed = .5
 	ghost_rate = 120 --higher means less ghosts
 	coin_rate = 300
+	vacuum_range = 16
+	vacuum_width = 11
+	vacuum_speed = 0.5 --slowdown while using vacuum
 end
 
 
@@ -36,7 +39,7 @@ function update_gameplay()
  
  move_luigi()
  move_boos()
- 
+ check_vacuum(luigi)
  collide_boos()
  
  -- make ghosts happen more often
@@ -92,7 +95,14 @@ end
 function draw_boos()
 	for b in all(boos) do
 		draw_shadow(b.x,b.y)
-		spr(b.s,b.x,b.y-2)
+		
+		if b.hurt then
+			if timer%4>1 then
+				spr(b.s,b.x,b.y-2)
+			end
+		else
+			spr(b.s,b.x,b.y-2)
+		end
 	end
 end
 
@@ -120,8 +130,15 @@ end
 
 function move_boos()
 	for b in all(boos) do
-		b.x = b.x + b.dx
-		b.y = b.y + b.dy
+		local dx = b.dx
+		local dy = b.dy
+		if b.hurt then
+			dx = dx * 0.5
+			dy = dy * 0.5
+		end
+		b.hurt = false
+		b.x = b.x + dx
+		b.y = b.y + dy
 		if b.x < -12 or b.x > 130 or
 			b.y < -12 or b.y > 130 then
 			del(boos,b)
@@ -132,6 +149,8 @@ end
 function make_boo()
 	local boo = {}
 	boo.s = 8 -- sprite no.
+	boo.health=20
+	boo.hurt=false
 	if rnd() < 0.5 then
 		boo.dx = 0
 		boo.dy = ghost_speed * sgn(rnd()-.5)
@@ -162,6 +181,7 @@ function make_globals()
 	gamestart = false
 	gameend = false
 	boos = {}
+	poke(0x5f5c, 255)
 end
 
 function update_globals()
@@ -174,33 +194,56 @@ function make_luigi()
 	luigi.x = 50
 	luigi.y = 76
 	luigi.headsprite = 2
-	luigi.bodysprite = 5
-	luigi.frame = 0 -- dont touch this
-	luigi.framenow = 0
-	luigi.timer = 0
-	luigi.coins = 0
+	luigi.bodysprite = 5	
+	luigi.health = 3
+	
+	-- dont edit these ones
 	luigi.moved = false
 	luigi.faceleft = false
-	luigi.health = 3
+	luigi.frame = 0 
+	luigi.framenow = 0
+	luigi.timer = 0
+	luigi.vacuum = false
+	luigi.vacx = 1
+	luigi.vacy = 0
 end
 
 function move_luigi()
 	local dx = 0
 	local dy = 0
 	luigi.moved = false
+	luigi.vacuum = false
 
 	if (btn(0)) dx = -1
 	if (btn(1)) dx = 1
 	if (btn(2)) dy = -1
 	if (btn(3)) dy = 1
+	if (btn(4)) luigi.vacuum = true
 	
 	if (dx!=0 or dy!=0) luigi.moved=true
-	if (dx > 0) luigi.faceleft = false
-	if (dx < 0) luigi.faceleft = true
+	if (dx > 0 and not luigi.vacuum) luigi.faceleft = false
+	if (dx < 0 and not luigi.vacuum) luigi.faceleft = true
 		
 	if abs(dx) + abs(dy) > 1 then
 		dx = dx * .707
 		dy = dy * .707
+	end
+	
+	if btnp(4) then
+		luigi.vacx=dx
+		luigi.vacy=dy
+		if dx==0 and dy==0 then
+			if luigi.faceleft then
+				luigi.vacx = -1
+			else
+				luigi.vacx = 1
+			end
+		end
+	end
+	
+	if luigi.vacuum then
+		dx = dx * vacuum_speed
+		dy = dy * vacuum_speed
 	end
 	
 	dx = dx * bro_speed
@@ -217,18 +260,58 @@ function move_luigi()
 	
 	-- timer
 	luigi.timer = max(0,luigi.timer-1)
-	
+		
+end
+
+function check_vacuum(bro)
+	if (not bro.vacuum) return
+	local cx = bro.vacx*vacuum_range+bro.x
+	local cy = bro.vacy*vacuum_range+bro.y
+	local d = vacuum_width
+	for b in all(boos) do
+  if cx+d > b.x and
+  	cx < b.x+8 and
+  	cy+d > b.y and
+  	cy < b.y+8 then
+  		hurt_boo(b)
+--  		hurt_luigi()
+  	end
+ end
+end
+
+function hurt_boo(b)
+	b.health = b.health-1
+	if (b.health < 1) kill_boo(b)
+	b.hurt = true
+end
+
+function draw_vacuum(bro)
+	local ccount=4
+	for i=0,ccount-1,1 do
+		local cycle = ((timer+i*15/ccount)%15) 
+		local dist = vacuum_range*(1-(cycle/15))
+		local cx = bro.x + 4 + bro.vacx*dist
+		local cy = bro.y + 2 + bro.vacy*dist
+		local cr = (1+vacuum_width/2)*(1-(cycle/15))
+		if (timer+i)%2>0 then
+			circ(cx,cy,cr,6)
+		end
+	end
 end
 
 function draw_luigi()
 	--shadow
 	draw_shadow(luigi.x,luigi.y+1)
+	
+	--vacuum particles
+	if (luigi.vacuum) draw_vacuum(luigi)
+	
 	--if hurt, flash
 	if (luigi.timer%8>3) return
 	
 	--animate
 	local yup = 0
-	if luigi.moved then
+	if luigi.moved or luigi.vacuum then
 		if timer%10 > 4 then
 			yup=1
 		end
@@ -237,6 +320,10 @@ function draw_luigi()
 	spr(luigi.bodysprite+yup,luigi.x,luigi.y-2-yup,1,1,luigi.faceleft)
 	--head
 	spr(luigi.headsprite,luigi.x,luigi.y-8-yup,1,1,luigi.faceleft)
+	--vacuum
+	if luigi.vacuum then
+		spr(10,luigi.x,luigi.y-2-yup,1,1,luigi.faceleft)
+	end
 end
 
 function draw_shadow(x,y)
@@ -257,12 +344,12 @@ end
 
 __gfx__
 00000000008888000033373000000000000000000000000000000000ffffffff0066660000011110000000000000000008e008e0000000000000000000000000
-00000000088887880333333308c88c80088c8c800313313003313130ff0000ff06777760001cccc100000000000990008888888e000000000000000000000000
-00700700088888803331f1f088c88c8808778c703313313303773170f000000f67771716101c1c1100000000009aa9008888888e000000000000000000000000
-0007700088f1f1f044f1f1f077cccc770c77cc747711117701771173000000000677171611ccccc10000000009aaaa902888888e000000000000000000000000
-000770004ff1f1f04fffffff77cccc7744cccc44771111773311113300000000067777761cccccc10000000009aaaa902888888e000000000000000000000000
-00700700ff1fffffffff1fff0cc00cc044c0cc440110011033101133f000000f6777887601cccc1000000000009aa90002888880000000000000000000000000
-00000000fff111110ffff11104400440400000000330033030000000ff0000ff06778860001cc100000000000009900000288800000000000000000000000000
+00000000088887880333333308c88c80088c8c800313313003313130ff0000ff06777760001cccc100000050000990008888888e000000000000000000000000
+00700700088888803331f1f088c88c8808778c703313313303773170f000000f67771716101c1c1100000550009aa9008888888e000000000000000000000000
+0007700088f1f1f044f1f1f077cccc770c77cc747711117701771173000000000677171611ccccc10555556009aaaa902888888e000000000000000000000000
+000770004ff1f1f04fffffff77cccc7744cccc44771111773311113300000000067777761cccccc10666656009aaaa902888888e000000000000000000000000
+00700700ff1fffffffff1fff0cc00cc044c0cc440110011033101133f000000f6777887601cccc1000000550009aa90002888880000000000000000000000000
+00000000fff111110ffff11104400440400000000330033030000000ff0000ff06778860001cc100000000500009900000288800000000000000000000000000
 000000000ffffff000fffff004440444000000000333033300000000ffffffff0066660000011000000000000000000000028000000000000000000000000000
 11111110ee6dee6dee6dee6dd6de6de22ed6ed6dd6de2e6d2e6dee6dee62ed6dee6dee6222222222d6de6de22ed6ed6d00000000000000000000000000000000
 11111101ee6dee6dee6dee6dde6d6de22ed6d6edde6d2e6d2e6dee6dee62d6edee6dee62ee6dee6dde6d6d2de2d6d6ed00000000000000000000000000000000
