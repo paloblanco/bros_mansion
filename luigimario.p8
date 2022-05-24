@@ -161,7 +161,7 @@ function collide_items(bro)
   		coin_count += 10
   		sfx(3)
   	end
-  	if (i.name=="heart") 
+  	if i.name=="heart" then
   		bro.health += 1
   		sfx(4)
   	end
