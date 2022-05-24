@@ -9,7 +9,7 @@ function _init()
 	
 	bro_speed = .75 -- higher is faster!
 	ghost_speed = .5
-	ghost_rate = 120 --higher means less ghosts
+	ghost_rate = 90 --higher means less ghosts
 	vacuum_range = 16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
@@ -43,18 +43,21 @@ function update_gameplay()
 	
 	move_boos()
 	
+	local vac_stop=true
 	for bro in all(bros) do
 		if bro.alive then
 			check_vacuum(bro)
 			collide_boos(bro)
 			collide_items(bro)
 		end
+		if (bro.vacuum) vac_stop = false
 	end
+	if (vac_stop) sfx(1,-2)
 	
 	-- make ghosts happen more often
 	if timer_sec%5==0 and timer==0 then
 		ghost_rate = ghost_rate - 2
-		ghost_speed = ghost_speed + .025
+		ghost_speed = ghost_speed + .02
 	end 
  
  -- gamend?
@@ -150,8 +153,14 @@ function collide_items(bro)
   	bro.x+1 < i.x+6 and
   	bro.y+6 > i.y+1 and
   	bro.y+1 < i.y+6 then
-  	if (i.name=="coin") coin_count += 1
-  	if (i.name=="bigcoin") coin_count += 10
+  	if i.name=="coin" then
+  		coin_count += 1
+  		sfx(2)
+  	end
+  	if i.name=="bigcoin" then
+  		coin_count += 10
+  		
+  	end
   	if (i.name=="heart") bro.health += 1
   	if i.name=="1up" then
   	 for bro in all(bros) do
@@ -353,6 +362,7 @@ function move_bro(bro)
 				bro.vacx = 1
 			end
 		end
+		sfx(1)
 	end
 	
 	if bro.vacuum then
@@ -544,4 +554,5 @@ __map__
 7071717171717171717171717171717200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 010100001803418035000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010800001a1561d156231562615600700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800040e72611726177260e72600700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800002934533345000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
