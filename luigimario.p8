@@ -78,6 +78,7 @@ end
 
 function _draw()
 	-- draw the room
+	update_cam(luigi)
 	cls()
 	map()
 	
@@ -89,6 +90,7 @@ function _draw()
 	draw_boos()
 	draw_items()
 	-- status bar
+	camera()
 	rectfill(0,112,128,128,0)
 	rect(0,112,127,127,6)
 	
@@ -295,6 +297,33 @@ function make_globals()
 	bros = {}
 	items = {}
 	poke(0x5f5c, 255)
+	setup_cam()		
+end
+
+function setup_cam()
+	camxmin=0
+	camxmax=0
+	camymin=0
+	camymax=0
+	for xx=0,127,1 do
+		for yy=0,63,1 do
+			local t = mget(xx,yy)
+			if t != 0 then
+				camxmin=min(camxmin,8*xx)
+				camxmax=max(camxmax,8*(xx-15))
+				camymin=min(camymin,8*yy)
+				camymax=max(camymax,8*(yy-15))
+			end
+		end
+	end
+end
+
+function update_cam(bro)
+	local camx = max(camxmin,bro.x-64)
+	local camy = max(camymin,bro.y-64)
+	camx = min(camxmax,camx)
+	camy = min(camymax,camy)
+	camera(camx,camy)
 end
 
 function update_globals()
