@@ -2,17 +2,19 @@ pico-8 cartridge // http://www.pico-8.com
 version 35
 __lua__
 function _init()
-	make_globals() -- dont play with this
-	make_luigi()
-	
+		
 	-- game variables
-	
+	start_health = 3
 	bro_speed = .75 -- higher is faster!
 	ghost_speed = .5
 	ghost_rate = 90 --higher means less ghosts
 	vacuum_range = 16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
+	
+	make_globals() -- dont play with this
+	make_luigi()
+	-- play music
 	music(0)
 end
 
@@ -308,7 +310,7 @@ function return_bro()
 	bro.x = 50
 	bro.y = 76
 	bro.sprite = 1
-	bro.health = 3
+	bro.health = start_health
 	
 	-- dont edit these ones
 	bro.moved = false
@@ -388,10 +390,15 @@ function move_bro(bro)
 	bro.y = bro.y + dy
 	
 	-- out of bounds code
-	if (bro.x < 8) bro.x = 8
-	if (bro.x > 112) bro.x = 112
-	if (bro.y < 24) bro.y = 24
-	if (bro.y > 96) bro.y = 96
+--	if (bro.x < 8) bro.x = 8
+--	if (bro.x > 112) bro.x = 112
+--	if (bro.y < 24) bro.y = 24
+--	if (bro.y > 96) bro.y = 96
+	
+	if (dx > 0 and bump_right(bro)) snap_left(bro)
+	if (dx < 0 and bump_left(bro)) snap_right(bro)
+	if (dy < 0 and bump_up(bro)) snap_down(bro)
+	if (dy > 0 and bump_down(bro)) snap_up(bro)
 	
 	-- timer
 	bro.timer = max(0,bro.timer-1)
@@ -401,6 +408,65 @@ function move_bro(bro)
 		sfx(0)
 	end
 		
+end
+
+function snap_down(bro)
+	snap(bro,-1,(1+(bro.y\8)),0,-1)
+end
+
+function snap_up(bro)
+	snap(bro,-1,(bro.y\8),0,1)
+end
+
+function snap_right(bro)
+	snap(bro,(1+(bro.x\8)),-1,-1,0)
+end
+
+function snap_left(bro)
+	snap(bro,(bro.x\8),-1,1,0)
+end
+
+function snap(bro,mx,my,xoff,yoff)
+	local newx = bro.x
+	if (mx != -1) newx = 8*mx + xoff
+	local newy = bro.y
+	if (my != -1) newy = 8*my + yoff
+	bro.x = newx
+	bro.y = newy
+end
+
+function bump(mx0,my0,mx1,my1)
+	return fget(mget(mx0,my0),0) or fget(mget(mx1,my1),0)
+end
+
+function bump_vert(bro,yoff)
+	local mx0 = (bro.x+2)\8
+	local mx1 = (bro.x+6)\8
+	local my = (bro.y+yoff)\8
+	return bump(mx0,my,mx1,my)
+end
+
+function bump_down(bro)
+	return bump_vert(bro,7)
+end
+
+function bump_up(bro)
+	return bump_vert(bro,1)
+end
+
+function bump_side(bro,xoff)
+	local mx = (bro.x+xoff)\8
+	local my0= (bro.y+2)\8
+	local my1= (bro.y+6)\8
+	return bump(mx,my0,mx,my1)
+end
+
+function bump_left(bro)
+	return bump_side(bro,1)
+end
+
+function bump_right(bro)
+	return bump_side(bro,7)
 end
 
 function check_vacuum(bro)
@@ -550,7 +616,7 @@ de6d626dee6dee6dee2ed6ed00000000000000000000000000000000000000000000000000000000
 e26dee6dee6dee6dee6dee2e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 2e6dee6dee6dee6dee6dee6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __gff__
-0000000000000000000000000000000000000000000000000000000000010100000000000100000000000000000101000000000001000000000000000001010001010100000000000000000000000000010101000000000000000000000000000101010000000000000000000000000001010100000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000010100000000000100000000000000000101000000000001000000000000000001010001010100000000000000000000000000010101000000000000000000000000000100010000000000000000000000000001010100000000000000000000000000
 0000010101010101010101010101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 4141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
