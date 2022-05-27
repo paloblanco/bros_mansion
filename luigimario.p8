@@ -71,6 +71,7 @@ function update_gameplay()
  for bro in all(bros) do
  	if (bro.alive) gamend = false
  end
+ if (trophy) gamend = true
  
 	update_globals() -- don't play with this
 	
@@ -115,7 +116,8 @@ function _draw()
 	-- end game
 	if gamend then
 		local ys = 40
-		coprint("game over",ys,0,7)
+		if (not trophy) coprint("game over",ys,0,7)
+		if (trophy) coprint("you win!",ys,0,7)
 		fscore = coin_count+timer_sec
 		coprint("final score: "..fscore,ys+12,10,0)
 	end
@@ -179,6 +181,10 @@ function collide_items(bro)
 					end
 				end
  		end
+ 		if i.name=="trophy" then
+				trophy = true
+				sfx(5)
+			end
  		del(items,i)
  	end
 	end
