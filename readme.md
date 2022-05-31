@@ -6,3 +6,7 @@ This is a tiny game I am making to teach my nephew about game programming. You w
 
 ## Play online here:
 Coming soon!
+
+## To do:
+- make stomping bad guy (sprite 60)
+- add peach and third player
