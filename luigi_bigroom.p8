@@ -13,7 +13,7 @@ function _init()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 10
+	damage = 1 -- vacuum damage
 	
 	make_globals() -- dont play with this
 	make_luigi()
@@ -32,7 +32,6 @@ function _update60()
 		end
 	end
 	if gamend then
-		_draw()
 		if btnp(4) or btnp(5) then
 			run()
 		end
@@ -42,27 +41,15 @@ function _update60()
 end
 
 function update_gameplay()
+	
 	if rnd(ghost_rate) < 1 then
 		make_random_boo()
 	end
  
-	for bro in all(bros) do
-		if (bro.alive) move_bro(bro)
-	end
-	
+	update_bros()
 	update_boos()
-	
-	local vac_stop=true
-	for bro in all(bros) do
-		if bro.alive then
-			check_vacuum(bro)
-			collide_boos(bro)
-			collide_items(bro)
-			if (bro.vacuum) vac_stop = false
-		end
-	end
-	if (vac_stop) sfx(1,-2)
-	
+	update_collisions()
+		
 	-- make ghosts happen more often
 	if timer_sec%5==0 and timer==0 then
 		ghost_rate = ghost_rate - ghost_dr
@@ -129,6 +116,25 @@ function _draw()
 	end
 end
 
+function update_bros()
+	for bro in all(bros) do
+		if (bro.alive) update_bro(bro)
+	end
+end
+
+function update_collisions()
+	local vac_stop=true
+	for bro in all(bros) do
+		if bro.alive then
+			check_vacuum(bro)
+			collide_boos(bro)
+			collide_items(bro)
+			if (bro.vacuum) vac_stop = false
+		end
+	end
+	if (vac_stop) sfx(1,-2)
+end
+
 function check_p2()
 	for ix=0,5,1 do
 		if btnp(ix,1) then
@@ -157,46 +163,9 @@ function collide_items(bro)
 			bro.x+1 < i.x+6 and
 			bro.y+6 > i.y+1 and
 			bro.y+1 < i.y+6 then
-			if i.name=="coin" then
-				coin_count += 1
-				sfx(2)
-			end
-			if i.name=="bigcoin" then
-				coin_count += 10
-				sfx(3)
-			end
-			if i.name=="heart" then
-				bro.health += 1
-				sfx(4)
-			end
-			if i.name=="1up" then
-				sfx(5)
-				for bro in all(bros) do
-					if (not bro.alive) then
-						bro.alive=true
-						bro.health=5
-						bro.timer=50
-					end
-				end
- 		end
- 		if i.name=="trophy" then
-				trophy = true
-				sfx(5)
-			end
-			if i.name=="redkey" then
-				redkey = true
-				sfx(2)
-			end
-			if i.name=="bluekey" then
-				bluekey = true
-				sfx(2)
-			end
-			if i.name=="orangekey" then
-				orangekey = true
-				sfx(2)
-			end
- 		del(items,i)
- 	end
+			i.get_me(i,bro)
+			del(items,i)
+		end
 	end
 end
 
@@ -250,18 +219,26 @@ end
 
 function setup_items()
 	item_list = {}
-	item_list[48]="coin"
-	item_list[49]="heart"
-	item_list[50]="bigcoin"
-	item_list[51]="1up"
-	item_list[52]="trophy"
-	item_list[53]="redkey"
-	item_list[54]="bluekey"
-	item_list[55]="orangekey"
+	item_list[48]={"coin",get_coin}
+	item_list[49]={"heart",get_heart}
+	item_list[50]={"bigcoin",get_bigcoin}
+	item_list[51]={"1up",get_1up}
+	item_list[52]={"trophy",get_trophy}
+	item_list[53]={"redkey",get_redkey}
+	item_list[54]={"bluekey",get_bluekey}
+	item_list[55]={"orangekey",get_orangekey}
 	item_indices = {}
 	for k,_ in pairs(item_list) do
 		add(item_indices,k)
 	end
+end
+
+function get_item_name(sp)
+	return item_list[sp][1]
+end
+
+function get_item_func(sp)
+	return item_list[sp][2]
 end
 
 function random_item(x,y)
@@ -284,12 +261,60 @@ function random_item(x,y)
 	make_item(x,y,sp)
 end
 
+function get_coin(item,bro)
+	coin_count += 1
+	sfx(2)
+end
+
+function get_bigcoin(item,bro)
+	coin_count += 10
+	sfx(3)
+end
+
+function get_heart(item,bro)
+	bro.health += 1
+	sfx(4)
+end
+
+function get_1up(item,bro)
+	sfx(5)
+	for bbro in all(bros) do
+		if (not bbro.alive) then
+			bbro.alive=true
+			bbro.health=5
+			bbro.timer=50
+		end
+	end
+end
+
+function get_trophy(item,bro)
+	trophy = true
+	sfx(5)
+end
+			
+function get_redkey(item,bro)
+	redkey = true
+	sfx(2)
+end
+
+function get_bluekey(item,bro)
+	bluekey = true
+	sfx(2)
+end
+
+function get_orangekey(item,bro)
+	orangekey = true
+	sfx(2)
+end
+			
+
 function make_item(x,y,sp)
 	local item = {}
 	item.x=x
 	item.y=y
 	item.sprite = sp
-	item.name = item_list[sp]
+	item.name = get_item_name(sp)
+	item.get_me = get_item_func(sp)
 	add(items,item)
 end
 
@@ -648,7 +673,7 @@ function make_mario()
 	add(bros,mario)
 end
 
-function move_bro(bro)
+function update_bro(bro)
 	local dx = 0
 	local dy = 0
 	bro.moved = false
