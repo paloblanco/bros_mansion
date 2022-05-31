@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 35
+version 36
 __lua__
 -- main loop
 
@@ -11,7 +11,7 @@ function _init()
 	-- game variables
 	start_health = 5
 	regen_health = 5 -- how much you come back with
-	bro_speed = 1.75 --.75 -- higher is faster!
+	bro_speed = 0.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
 	ghost_rate = 12000--90 --higher means less ghosts
@@ -19,7 +19,7 @@ function _init()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 20 --1 -- vacuum damage
+	damage = 1 -- vacuum damage
 	make_globals() -- dont play with this
 	make_luigi()
 	-- play music
@@ -338,17 +338,15 @@ end
 
 function check_vacuum(bro)
 	if (not bro.vacuum) return
-	local cx = bro.vacx*vacuum_range+bro.x
-	local cy = bro.vacy*vacuum_range+bro.y
+	local v={}
+	v.x = bro.vacx*vacuum_range+bro.x
+	v.y = bro.vacy*vacuum_range+bro.y
 	local d = vacuum_width
 	for b in all(boos) do
 		if not b.ball then
 			local dplus=0
 			if (b.big or b.king) dplus=8
-	  if cx+d > b.x-dplus and
-	  	cx < b.x+8+dplus and
-	  	cy+d > b.y-dplus and
-	  	cy < b.y+8+dplus then
+	  if collide(v,b,d+dplus) then
 	  	if (not b.stomp) hurt_boo(b)
 	  	if (b.stomp and b.z < 2) hurt_boo(b)
 	  end
@@ -408,12 +406,11 @@ function hurt_bro(bro)
 end
 
 
+
+
 function collide_items(bro)
 	for i in all(items) do
-		if bro.x+6 > i.x+1 and
-			bro.x+1 < i.x+6 and
-			bro.y+6 > i.y+1 and
-			bro.y+1 < i.y+6 then
+		if collide(bro,i,8) then
 			i.get_me(i,bro)
 			del(items,i)
 		end
@@ -423,10 +420,7 @@ end
 function collide_boos(bro)
  if (bro.timer > 0) return
  for b in all(boos) do
-  if bro.x+6 > b.x+1 and
-  	bro.x+1 < b.x+6 and
-  	bro.y+6 > b.y+1 and
-  	bro.y+1 < b.y+6 then
+  if collide(bro,b,6) then
   		if ((not b.king) and (not b.stomp)) del(boos,b)
   		if (not b.stomp) hurt_bro(bro)
   		if (b.stomp and b.z < 2) hurt_bro(bro)
@@ -889,6 +883,20 @@ function draw_shadow(x,y)
 	palt(15,true)
 	spr(32,x,y)
 	palt()
+end
+
+function collide(a,b,r)
+	-- a and b both must have x and y
+	-- r is radius
+	local r = r or 7
+	if a.x+r > b.x and
+		b.x+r > a.x and
+		a.y+r > b.y and
+		b.y+r > a.y then
+		return true
+	else 
+		return false
+	end
 end
 -->8
 -- utils
