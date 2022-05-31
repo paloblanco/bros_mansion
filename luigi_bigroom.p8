@@ -1,10 +1,16 @@
 pico-8 cartridge // http://www.pico-8.com
 version 35
 __lua__
+-- main loop
+
+-- bros mini mansion
+-- palo blanco games, 2022
+-- rocco panella
+
 function _init()
-		
 	-- game variables
 	start_health = 5
+	regen_health = 5 -- how much you come back with
 	bro_speed = 1.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
@@ -13,14 +19,12 @@ function _init()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 20 -- vacuum damage
-	
+	damage = 20 --1 -- vacuum damage
 	make_globals() -- dont play with this
 	make_luigi()
 	-- play music
 	music(0)
 end
-
 
 function _update60()
 	if gamestart and not gamend then
@@ -74,8 +78,8 @@ function _draw()
 		if (bro.alive) draw_bro(bro)
 	end
 	
-	draw_boos()
-	draw_items()
+	draw_all_boos()
+	draw_all_items()
 	-- status bar
 	camera()
 	rectfill(0,112,128,128,0)
@@ -119,12 +123,6 @@ function try_increase_ghosts()
 	end 
 end
 
-function update_bros()
-	for bro in all(bros) do
-		if (bro.alive) update_bro(bro)
-	end
-end
-
 function update_collisions()
 	local vac_stop=true
 	for bro in all(bros) do
@@ -147,18 +145,268 @@ function check_p2()
 	end
 end
 
-function draw_boos()
+function draw_all_boos()
 	for b in all(boos) do
 		b.draw_me(b)
 	end
 end
 
-function draw_items()
+function draw_all_items()
 	for i in all(items) do
 		draw_shadow(i.x,i.y)
 		spr(i.sprite,i.x,i.y-2)
 	end
 end
+
+function make_globals()
+	timer = 0
+	timer_sec = 0
+	coins = {}
+	coin_count = 0
+	gamestart = false
+	gameend = false
+	boos = {}
+	bros = {}
+	items = {}
+	trophy = false
+	redkey = false
+	bluekey = false
+	orangekey = false
+	poke(0x5f5c, 255) -- no key repeat
+	camx=0
+	camy=0
+	setup_items()
+	setup_boos()
+	setup_map()		
+end
+
+function setup_map()
+	camxmin=127*8
+	camxmax=0
+	camymin=63*8
+	camymax=0
+	for xx=0,127,1 do
+		for yy=0,63,1 do
+			local t = mget(xx,yy)
+			if t != 0 then
+				camxmin=min(camxmin,8*xx)
+				camxmax=max(camxmax,8*(xx-15))
+				camymin=min(camymin,8*yy)
+				camymax=max(camymax,8*(yy-13))
+			end
+			if t==1 then
+				luigi_start_x = xx*8
+				luigi_start_y = yy*8
+				mset(xx,yy,97)
+			end
+			if contains(boo_indices,t) then
+				boo_list[t](xx*8,yy*8)
+				mset(xx,yy,97)
+			elseif contains(item_indices,t) then
+				make_item(xx*8,yy*8,t)
+				mset(xx,yy,97)
+			end
+		end
+	end
+end
+
+function update_cam(bro)
+	camx = max(camxmin,bro.x-60)
+	camy = max(camymin,bro.y-60)
+	camx = min(camxmax,camx)
+	camy = min(camymax,camy)
+	camera(camx,camy)
+end
+
+function update_globals()
+	timer = (timer + 1)%60
+	if (timer == 0) timer_sec  = timer_sec + 1
+end
+-->8
+-- bros
+
+function update_bros()
+	for bro in all(bros) do
+		if (bro.alive) update_bro(bro)
+	end
+end
+
+function return_bro()
+	local bro = {}
+	bro.name = 'luigi'
+	bro.color = 3
+	bro.alive = true
+	bro.x = 50
+	bro.y = 76
+	bro.sprite = 1
+	bro.health = start_health
+	
+	-- dont edit these ones
+	bro.moved = false
+	bro.faceleft = false
+	bro.frame = 0 
+	bro.framenow = 0
+	bro.timer = 32
+	bro.vacuum = false
+	bro.vacx = 1
+	bro.vacy = 0
+	bro.player = 0 --  player index, for multiplayer
+	return bro
+end
+
+function make_luigi()
+	luigi = return_bro()
+	luigi.sprite = 1
+	luigi.name = 'luigi'
+	luigi.color = 3
+	luigi.x = luigi_start_x
+	luigi.y = luigi_start_y
+	add(bros,luigi)
+end
+
+function make_mario()
+	mario = return_bro()
+	mario.sprite = 3
+	mario.player = 1
+	mario.name = 'mario'
+	mario.color = 8
+	mario.x = luigi.x + 10
+	mario.y = luigi.y
+	add(bros,mario)
+end
+
+function update_bro(bro)
+	local dx = 0
+	local dy = 0
+	bro.moved = false
+	bro.vacuum = false
+
+	if (btn(0,bro.player)) dx = -1
+	if (btn(1,bro.player)) dx = 1
+	if (btn(2,bro.player)) dy = -1
+	if (btn(3,bro.player)) dy = 1
+	if (btn(4,bro.player)) bro.vacuum = true
+	
+	if (dx!=0 or dy!=0) bro.moved=true
+	if (dx > 0 and not bro.vacuum) bro.faceleft = false
+	if (dx < 0 and not bro.vacuum) bro.faceleft = true
+		
+	if abs(dx) + abs(dy) > 1 then
+		dx = dx * .707
+		dy = dy * .707
+	end
+	
+	if btnp(4,bro.player) then
+		bro.vacx=dx
+		bro.vacy=dy
+		if dx==0 and dy==0 then
+			if bro.faceleft then
+				bro.vacx = -1
+			else
+				bro.vacx = 1
+			end
+		end
+		sfx(1,-2)
+		sfx(1)
+	end
+	
+	if bro.vacuum then
+		dx = dx * vacuum_speed
+		dy = dy * vacuum_speed
+	end
+	
+	dx = dx * bro_speed
+	dy = dy * bro_speed
+	
+	bro.x = bro.x + dx
+	bro.y = bro.y + dy
+		
+	if (dx > 0 and bump_right(bro)) snap_left(bro)
+	if (dx < 0 and bump_left(bro)) snap_right(bro)
+	if (dy < 0 and bump_up(bro)) snap_down(bro)
+	if (dy > 0 and bump_down(bro)) snap_up(bro)
+	
+	-- timer
+	bro.timer = max(0,bro.timer-1)
+	
+	-- sounds
+	if bro.moved and timer%10==5 then
+		sfx(0)
+	end
+		
+end
+
+function check_vacuum(bro)
+	if (not bro.vacuum) return
+	local cx = bro.vacx*vacuum_range+bro.x
+	local cy = bro.vacy*vacuum_range+bro.y
+	local d = vacuum_width
+	for b in all(boos) do
+		if not b.ball then
+			local dplus=0
+			if (b.big or b.king) dplus=8
+	  if cx+d > b.x-dplus and
+	  	cx < b.x+8+dplus and
+	  	cy+d > b.y-dplus and
+	  	cy < b.y+8+dplus then
+	  	if (not b.stomp) hurt_boo(b)
+	  	if (b.stomp and b.z < 2) hurt_boo(b)
+	  end
+  end
+ end
+end
+
+function draw_vacuum(bro)
+	local ccount=4
+	for i=0,ccount-1,1 do
+		local cycle = ((timer+i*15/ccount)%15) 
+		local dist = vacuum_range*(1-(cycle/15))
+		local cx = bro.x + 4 + bro.vacx*dist
+		local cy = bro.y + 2 + bro.vacy*dist
+		local cr = (1+vacuum_width/2)*(1-(cycle/15))
+		if (timer+i)%2>0 then
+			circ(cx,cy,cr,6)
+		end
+	end
+end
+
+function draw_bro(bro)
+	--shadow
+	draw_shadow(bro.x,bro.y+1)
+	
+	--vacuum particles
+	if (bro.vacuum) draw_vacuum(bro)
+	
+	--if hurt, flash
+	if (bro.timer%8>3) return
+	
+	--animate
+	local yup = 0
+	if bro.moved or bro.vacuum then
+		if timer%10 > 4 then
+			yup=1
+		end
+	end
+
+	spr(bro.sprite+yup,bro.x,bro.y-2-8,1,2,bro.faceleft)
+	
+	--vacuum
+	if bro.vacuum then
+		spr(16,bro.x,bro.y-2-yup,1,1,bro.faceleft)
+	end
+end
+
+function hurt_bro(bro)
+	bro.health = bro.health-1
+	bro.timer = 60
+	if bro.health < 1 then
+		bro.alive=false
+		sfx(7)
+	else
+		sfx(6)
+	end
+end
+
 
 function collide_items(bro)
 	for i in all(items) do
@@ -186,67 +434,8 @@ function collide_boos(bro)
  end
 end
 
-function hurt_bro(bro)
-	bro.health = bro.health-1
-	bro.timer = 60
-	if bro.health < 1 then
-		bro.alive=false
-		sfx(7)
-	else
-		sfx(6)
-	end
-end
-
-function kill_boo(b)
-	del(boos,b)
-	if b.king then
-		make_item(b.x,b.y,52)
-	else
-		random_item(b.x,b.y)
-	end
-	sfx(8)
-	if b.big then
-		set_map_around(b.x,b.y,97)
-	end
-end
-
-function set_map_around(x,y,sp)
-	for xx=(x\8)-1,(x\8)+1,1 do
-		for yy=(y\8)-1,(y\8)+1,1 do
-			mset(xx,yy,sp)
-		end
-	end
-end
-
-function update_boos()
-	for b in all(boos) do
-		b.update_me(b)
-	end
-end
-
-function setup_items()
-	item_list = {}
-	item_list[48]={"coin",get_coin}
-	item_list[49]={"heart",get_heart}
-	item_list[50]={"bigcoin",get_bigcoin}
-	item_list[51]={"1up",get_1up}
-	item_list[52]={"trophy",get_trophy}
-	item_list[53]={"redkey",get_redkey}
-	item_list[54]={"bluekey",get_bluekey}
-	item_list[55]={"orangekey",get_orangekey}
-	item_indices = {}
-	for k,_ in pairs(item_list) do
-		add(item_indices,k)
-	end
-end
-
-function get_item_name(sp)
-	return item_list[sp][1]
-end
-
-function get_item_func(sp)
-	return item_list[sp][2]
-end
+-->8
+-- boos
 
 function setup_boos()
 	boo_list={}
@@ -263,82 +452,31 @@ function setup_boos()
 	end
 end
 
-function random_item(x,y)
-	local sp=48 --coin
-	local chance = rnd()
-	if chance < 0.9 then
-		sp = 48
-	elseif chance < .95 then
-		sp = 50 --bigcoin
-		for bro in all(bros) do
-			if not bro.alive then
-				if rnd() < 0.75 then
-					sp = 51 --mushroom
-				end
-			end
-		end
+function hurt_boo(b)
+	b.health = b.health-damage
+	if (b.health < 1) kill_boo(b)
+	b.hurt = true
+end
+
+function kill_boo(b)
+	del(boos,b)
+	if b.king then
+		make_item(b.x,b.y,52)
 	else
-		sp = 49 --heart
+		random_item(b.x,b.y)
 	end
-	make_item(x,y,sp)
-end
-
-function get_coin(item,bro)
-	coin_count += 1
-	sfx(2)
-end
-
-function get_bigcoin(item,bro)
-	coin_count += 10
-	sfx(3)
-end
-
-function get_heart(item,bro)
-	bro.health += 1
-	sfx(4)
-end
-
-function get_1up(item,bro)
-	sfx(5)
-	for bbro in all(bros) do
-		if (not bbro.alive) then
-			bbro.alive=true
-			bbro.health=5
-			bbro.timer=50
-		end
+	sfx(8)
+	if b.big then
+		set_map_around(b.x,b.y,97)
 	end
 end
 
-function get_trophy(item,bro)
-	trophy = true
-	sfx(5)
-end
-			
-function get_redkey(item,bro)
-	redkey = true
-	sfx(2)
+function update_boos()
+	for b in all(boos) do
+		b.update_me(b)
+	end
 end
 
-function get_bluekey(item,bro)
-	bluekey = true
-	sfx(2)
-end
-
-function get_orangekey(item,bro)
-	orangekey = true
-	sfx(2)
-end
-			
-
-function make_item(x,y,sp)
-	local item = {}
-	item.x=x
-	item.y=y
-	item.sprite = sp
-	item.name = get_item_name(sp)
-	item.get_me = get_item_func(sp)
-	add(items,item)
-end
 
 function return_boo(x,y,dx,dy,updater,s,drawer)
 	local boo = {}
@@ -561,183 +699,111 @@ function make_random_boo()
 		dx,dy,update_basic_boo,33,draw_boo)
 	add(boos,boo)
 end
+-->8
+--items
 
-function make_globals()
-	timer = 0
-	timer_sec = 0
-	coins = {}
-	coin_count = 0
-	gamestart = false
-	gameend = false
-	boos = {}
-	bros = {}
-	items = {}
-	trophy = false
-	redkey = false
-	bluekey = false
-	orangekey = false
-	poke(0x5f5c, 255) -- no key repeat
-	camx=0
-	camy=0
-	setup_items()
-	setup_boos()
-	setup_map()		
+function setup_items()
+	item_list = {}
+	item_list[48]={"coin",get_coin}
+	item_list[49]={"heart",get_heart}
+	item_list[50]={"bigcoin",get_bigcoin}
+	item_list[51]={"1up",get_1up}
+	item_list[52]={"trophy",get_trophy}
+	item_list[53]={"redkey",get_redkey}
+	item_list[54]={"bluekey",get_bluekey}
+	item_list[55]={"orangekey",get_orangekey}
+	item_indices = {}
+	for k,_ in pairs(item_list) do
+		add(item_indices,k)
+	end
 end
 
-function setup_map()
-	camxmin=127*8
-	camxmax=0
-	camymin=63*8
-	camymax=0
-	for xx=0,127,1 do
-		for yy=0,63,1 do
-			local t = mget(xx,yy)
-			if t != 0 then
-				camxmin=min(camxmin,8*xx)
-				camxmax=max(camxmax,8*(xx-15))
-				camymin=min(camymin,8*yy)
-				camymax=max(camymax,8*(yy-13))
+function get_item_name(sp)
+	return item_list[sp][1]
+end
+
+function get_item_func(sp)
+	return item_list[sp][2]
+end
+
+function random_item(x,y)
+	local sp=48 --coin
+	local chance = rnd()
+	if chance < 0.9 then
+		sp = 48
+	elseif chance < .95 then
+		sp = 50 --bigcoin
+		for bro in all(bros) do
+			if not bro.alive then
+				if rnd() < 0.75 then
+					sp = 51 --mushroom
+				end
 			end
-			if t==1 then
-				luigi_start_x = xx*8
-				luigi_start_y = yy*8
-				mset(xx,yy,97)
-			end
-			if contains(boo_indices,t) then
-				boo_list[t](xx*8,yy*8)
-				mset(xx,yy,97)
-			elseif contains(item_indices,t) then
-				make_item(xx*8,yy*8,t)
-				mset(xx,yy,97)
-			end
+		end
+	else
+		sp = 49 --heart
+	end
+	make_item(x,y,sp)
+end
+
+function get_coin(item,bro)
+	coin_count += 1
+	sfx(2)
+end
+
+function get_bigcoin(item,bro)
+	coin_count += 10
+	sfx(3)
+end
+
+function get_heart(item,bro)
+	bro.health += 1
+	sfx(4)
+end
+
+function get_1up(item,bro)
+	sfx(5)
+	for bbro in all(bros) do
+		if (not bbro.alive) then
+			bbro.alive=true
+			bbro.health=regen_health
+			bbro.timer=50
 		end
 	end
 end
 
-function contains(t,v)
-	for vv in all(t) do
-		if (v==vv) return true
-	end
-	return false
+function get_trophy(item,bro)
+	trophy = true
+	sfx(5)
+end
+			
+function get_redkey(item,bro)
+	redkey = true
+	sfx(2)
 end
 
-function update_cam(bro)
-	camx = max(camxmin,bro.x-60)
-	camy = max(camymin,bro.y-60)
-	camx = min(camxmax,camx)
-	camy = min(camymax,camy)
-	camera(camx,camy)
+function get_bluekey(item,bro)
+	bluekey = true
+	sfx(2)
 end
 
-function update_globals()
-	timer = (timer + 1)%60
-	if (timer == 0) timer_sec  = timer_sec + 1
+function get_orangekey(item,bro)
+	orangekey = true
+	sfx(2)
 end
+			
 
-function return_bro()
-	local bro = {}
-	bro.name = 'luigi'
-	bro.color = 3
-	bro.alive = true
-	bro.x = 50
-	bro.y = 76
-	bro.sprite = 1
-	bro.health = start_health
-	
-	-- dont edit these ones
-	bro.moved = false
-	bro.faceleft = false
-	bro.frame = 0 
-	bro.framenow = 0
-	bro.timer = 32
-	bro.vacuum = false
-	bro.vacx = 1
-	bro.vacy = 0
-	bro.player = 0 --  player index, for multiplayer
-	return bro
+function make_item(x,y,sp)
+	local item = {}
+	item.x=x
+	item.y=y
+	item.sprite = sp
+	item.name = get_item_name(sp)
+	item.get_me = get_item_func(sp)
+	add(items,item)
 end
-
-function make_luigi()
-	luigi = return_bro()
-	luigi.sprite = 1
-	luigi.name = 'luigi'
-	luigi.color = 3
-	luigi.x = luigi_start_x
-	luigi.y = luigi_start_y
-	add(bros,luigi)
-end
-
-function make_mario()
-	mario = return_bro()
-	mario.sprite = 3
-	mario.player = 1
-	mario.name = 'mario'
-	mario.color = 8
-	mario.x = luigi.x + 10
-	mario.y = luigi.y
-	add(bros,mario)
-end
-
-function update_bro(bro)
-	local dx = 0
-	local dy = 0
-	bro.moved = false
-	bro.vacuum = false
-
-	if (btn(0,bro.player)) dx = -1
-	if (btn(1,bro.player)) dx = 1
-	if (btn(2,bro.player)) dy = -1
-	if (btn(3,bro.player)) dy = 1
-	if (btn(4,bro.player)) bro.vacuum = true
-	
-	if (dx!=0 or dy!=0) bro.moved=true
-	if (dx > 0 and not bro.vacuum) bro.faceleft = false
-	if (dx < 0 and not bro.vacuum) bro.faceleft = true
-		
-	if abs(dx) + abs(dy) > 1 then
-		dx = dx * .707
-		dy = dy * .707
-	end
-	
-	if btnp(4,bro.player) then
-		bro.vacx=dx
-		bro.vacy=dy
-		if dx==0 and dy==0 then
-			if bro.faceleft then
-				bro.vacx = -1
-			else
-				bro.vacx = 1
-			end
-		end
-		sfx(1,-2)
-		sfx(1)
-	end
-	
-	if bro.vacuum then
-		dx = dx * vacuum_speed
-		dy = dy * vacuum_speed
-	end
-	
-	dx = dx * bro_speed
-	dy = dy * bro_speed
-	
-	bro.x = bro.x + dx
-	bro.y = bro.y + dy
-		
-	if (dx > 0 and bump_right(bro)) snap_left(bro)
-	if (dx < 0 and bump_left(bro)) snap_right(bro)
-	if (dy < 0 and bump_up(bro)) snap_down(bro)
-	if (dy > 0 and bump_down(bro)) snap_up(bro)
-	
-	-- timer
-	bro.timer = max(0,bro.timer-1)
-	
-	-- sounds
-	if bro.moved and timer%10==5 then
-		sfx(0)
-	end
-		
-end
+-->8
+-- all entities
 
 function snap_down(bro)
 	snap(bro,-1,(1+(bro.y\8)),0,-1)
@@ -818,78 +884,14 @@ function bump_right(bro)
 	return bump_side(bro,7)
 end
 
-function check_vacuum(bro)
-	if (not bro.vacuum) return
-	local cx = bro.vacx*vacuum_range+bro.x
-	local cy = bro.vacy*vacuum_range+bro.y
-	local d = vacuum_width
-	for b in all(boos) do
-		if not b.ball then
-			local dplus=0
-			if (b.big or b.king) dplus=8
-	  if cx+d > b.x-dplus and
-	  	cx < b.x+8+dplus and
-	  	cy+d > b.y-dplus and
-	  	cy < b.y+8+dplus then
-	  	if (not b.stomp) hurt_boo(b)
-	  	if (b.stomp and b.z < 2) hurt_boo(b)
-	  end
-  end
- end
-end
-
-function hurt_boo(b)
-	b.health = b.health-damage
-	if (b.health < 1) kill_boo(b)
-	b.hurt = true
-end
-
-function draw_vacuum(bro)
-	local ccount=4
-	for i=0,ccount-1,1 do
-		local cycle = ((timer+i*15/ccount)%15) 
-		local dist = vacuum_range*(1-(cycle/15))
-		local cx = bro.x + 4 + bro.vacx*dist
-		local cy = bro.y + 2 + bro.vacy*dist
-		local cr = (1+vacuum_width/2)*(1-(cycle/15))
-		if (timer+i)%2>0 then
-			circ(cx,cy,cr,6)
-		end
-	end
-end
-
-function draw_bro(bro)
-	--shadow
-	draw_shadow(bro.x,bro.y+1)
-	
-	--vacuum particles
-	if (bro.vacuum) draw_vacuum(bro)
-	
-	--if hurt, flash
-	if (bro.timer%8>3) return
-	
-	--animate
-	local yup = 0
-	if bro.moved or bro.vacuum then
-		if timer%10 > 4 then
-			yup=1
-		end
-	end
-
-	spr(bro.sprite+yup,bro.x,bro.y-2-8,1,2,bro.faceleft)
-	
-	--vacuum
-	if bro.vacuum then
-		spr(16,bro.x,bro.y-2-yup,1,1,bro.faceleft)
-	end
-end
-
 function draw_shadow(x,y)
 	palt(0,false)
 	palt(15,true)
 	spr(32,x,y)
 	palt()
 end
+-->8
+-- utils
 
 function oprint(str,x,y,c,co)
 	for xx=-1,1,1 do
@@ -904,6 +906,22 @@ function coprint(str,y,c,c0)
 	local xx = 64 - #str*2
 	oprint(str,xx,y,c,c0)
 end
+
+function contains(t,v)
+	for vv in all(t) do
+		if (v==vv) return true
+	end
+	return false
+end
+
+function set_map_around(x,y,sp)
+	for xx=(x\8)-1,(x\8)+1,1 do
+		for yy=(y\8)-1,(y\8)+1,1 do
+			mset(xx,yy,sp)
+		end
+	end
+end
+
 __gfx__
 00000000000000000033373000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000003337300333333300000000008887800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
