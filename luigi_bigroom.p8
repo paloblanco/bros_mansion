@@ -5,15 +5,15 @@ function _init()
 		
 	-- game variables
 	start_health = 5
-	bro_speed = .75 -- higher is faster!
+	bro_speed = 1.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
 	ghost_rate = 12000--90 --higher means less ghosts
-	ghost_dr = 0--2 -- how much they increase by
+	ghost_dr = 0--2 -- how much freq increase by
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 1 -- vacuum damage
+	damage = 20 -- vacuum damage
 	
 	make_globals() -- dont play with this
 	make_luigi()
@@ -49,12 +49,7 @@ function update_gameplay()
 	update_bros()
 	update_boos()
 	update_collisions()
-		
-	-- make ghosts happen more often
-	if timer_sec%5==0 and timer==0 then
-		ghost_rate = ghost_rate - ghost_dr
-		ghost_speed = ghost_speed + ghost_dvel
-	end 
+	try_increase_ghosts()
  
  -- gamend?
  gamend=true
@@ -66,6 +61,7 @@ function update_gameplay()
 	update_globals() -- don't play with this
 	
 end
+
 
 function _draw()
 	-- draw the room
@@ -114,6 +110,13 @@ function _draw()
 		fscore = coin_count+timer_sec
 		coprint("final score: "..fscore,ys+12,10,0)
 	end
+end
+
+function try_increase_ghosts()
+	if timer_sec%5==0 and timer==0 then
+		ghost_rate = ghost_rate - ghost_dr
+		ghost_speed = ghost_speed + ghost_dvel
+	end 
 end
 
 function update_bros()
@@ -203,10 +206,14 @@ function kill_boo(b)
 	end
 	sfx(8)
 	if b.big then
-		for xx=(b.x\8)-1,(b.x\8)+1,1 do
-			for yy=(b.y\8)-1,(b.y\8)+1,1 do
-				mset(xx,yy,97)
-			end
+		set_map_around(b.x,b.y,97)
+	end
+end
+
+function set_map_around(x,y,sp)
+	for xx=(x\8)-1,(x\8)+1,1 do
+		for yy=(y\8)-1,(y\8)+1,1 do
+			mset(xx,yy,sp)
 		end
 	end
 end
@@ -241,22 +248,37 @@ function get_item_func(sp)
 	return item_list[sp][2]
 end
 
+function setup_boos()
+	boo_list={}
+	boo_list[33]=make_horz_boo
+	boo_list[34]=make_vert_boo
+	boo_list[36]=make_big_boo
+	boo_list[37]=make_ball_boo
+	boo_list[38]=make_stomp_boo
+	boo_list[40]=make_king_boo
+	boo_list[42]=make_easy_wall
+	boo_indices = {}
+	for k,_ in pairs(boo_list) do
+		add(boo_indices,k)
+	end
+end
+
 function random_item(x,y)
-	local sp=48
+	local sp=48 --coin
 	local chance = rnd()
 	if chance < 0.9 then
 		sp = 48
 	elseif chance < .95 then
-		sp = 50
+		sp = 50 --bigcoin
 		for bro in all(bros) do
 			if not bro.alive then
 				if rnd() < 0.75 then
-					sp = 51
+					sp = 51 --mushroom
 				end
 			end
 		end
 	else
-		sp = 49
+		sp = 49 --heart
 	end
 	make_item(x,y,sp)
 end
@@ -394,6 +416,8 @@ end
 
 
 function make_ball_boo(x,y,dx,dy)
+	local dx = dx or .5
+	local dy = dy or .5
 	local boo = return_boo(x,y,dx,dy,
 	update_basic_boo,37,draw_boo)
 	boo.ball=true
@@ -445,11 +469,7 @@ function make_easy_wall(x,y)
 	boo.easywall=true
 	boo.health=500
 	add(boos,boo)
-	for xx=(x\8)-1,(x\8)+1,1 do
-		for yy=(y\8)-1,(y\8)+1,1 do
-			mset(xx,yy,86)
-		end
-	end
+	set_map_around(x,y,86)
 end
 
 function update_big_boo(b)
@@ -485,17 +505,21 @@ function make_big_boo(x,y)
 	boo.big=true
 	boo.health=200
 	add(boos,boo)
-	for xx=(x\8)-1,(x\8)+1,1 do
-		for yy=(y\8)-1,(y\8)+1,1 do
-			mset(xx,yy,86)
-		end
-	end
+	set_map_around(x,y,86)
 end
 
 function make_bounce_boo(x,y,dx,dy)
 	local boo = return_boo(x,y,dx,dy,update_bounce_boo,33,draw_boo)
 	boo.wallbump=true
 	add(boos,boo)
+end
+
+function make_vert_boo(x,y)
+	make_bounce_boo(x,y,0,ghost_speed)
+end
+
+function make_horz_boo(x,y)
+	make_bounce_boo(x,y,ghost_speed,0)
 end
 
 function update_bounce_boo(b)
@@ -552,24 +576,15 @@ function make_globals()
 	redkey = false
 	bluekey = false
 	orangekey = false
-	poke(0x5f5c, 255)
+	poke(0x5f5c, 255) -- no key repeat
 	camx=0
 	camy=0
 	setup_items()
+	setup_boos()
 	setup_map()		
 end
 
 function setup_map()
-	for xx=0,127,1 do
-		for yy=0,63,1 do
-			local t = mget(xx,yy)
-			if t==1 then
-				luigi_start_x = xx*8
-				luigi_start_y = yy*8
-				mset(xx,yy,97)
-			end
-		end
-	end
 	camxmin=127*8
 	camxmax=0
 	camymin=63*8
@@ -583,23 +598,13 @@ function setup_map()
 				camymin=min(camymin,8*yy)
 				camymax=max(camymax,8*(yy-13))
 			end
-			if t==33 then
-				make_bounce_boo(xx*8,yy*8,ghost_speed,0)
+			if t==1 then
+				luigi_start_x = xx*8
+				luigi_start_y = yy*8
 				mset(xx,yy,97)
-			elseif t==34 then
-				make_bounce_boo(xx*8,yy*8,0,ghost_speed)
-				mset(xx,yy,97)
-			elseif t==38 then
-				make_stomp_boo(xx*8,yy*8)
-				mset(xx,yy,97)
-			elseif t==36 then
-				make_big_boo(xx*8,yy*8)
-				mset(xx,yy,97)
-			elseif t==42 then
-				make_easy_wall(xx*8,yy*8)
-				mset(xx,yy,97)
-			elseif t==40 then
-				make_king_boo(xx*8,yy*8)
+			end
+			if contains(boo_indices,t) then
+				boo_list[t](xx*8,yy*8)
 				mset(xx,yy,97)
 			elseif contains(item_indices,t) then
 				make_item(xx*8,yy*8,t)
@@ -940,14 +945,14 @@ d26dee6dee6dee6dee6dee2d6d2dee6dee6dee6dee6de2d6ee00006dee00006d0000000000000000
 6d2dee6dee6dee6dee6de2d6de6d626dee6dee6dee2ed6edee00006dee00006d0000000000000000000000000000000000000000000000000000000000000000
 e6d2ee6dee6dee6dee6d2d6ede6d6d2dee6dee6de2d6d6ede26dee2dee00006d0000000000000000000000000000000000000000000000000000000000000000
 e6d2ee6dee6dee6dee6d2d6ed6de6de2ee6dee6d2ed6ed6d2e6dee62ee00006d0000000000000000000000000000000000000000000000000000000000000000
-d6de2e6dee6dee6dee62ed6d00000000444544450000000011111110ee00006d0000000000000000000000000000000000000000000000000000000000000000
-de6d2e6dee6dee6dee62d6ed00000000444544450000000011111101ee00006d0000000000000000000000000000000000000000000000000000000000000000
-de6de26dee6dee6dee2ed6ed00000000444544450000030011111011ee00006d0000000000000000000000000000000000000000000000000000000000000000
-6d6de26dee6dee6dee2ed6d600000000444544550000303000000000ee00006d0000000000000000000000000000000000000000000000000000000000000000
-6de6d62dee6dee6de26d6ed600000000444544450000000011101111ee00006d0000000000000000000000000000000000000000000000000000000000000000
-6de6de2dee6dee6de2ed6ed600000000444544450000000011011111ee00006d0000000000000000000000000000000000000000000000000000000000000000
-e6d6de622222222226ed6d6e00000000444544450300000010111111ee00006d0000000000000000000000000000000000000000000000000000000000000000
-e6de6d622222222226d6ed6e00000000445544453030000000000000ee00006d0000000000000000000000000000000000000000000000000000000000000000
+d6de2e6dee6dee6dee62ed6d00000000444544450000000000000001ee00006d0000000000000000000000000000000000000000000000000000000000000000
+de6d2e6dee6dee6dee62d6ed00000000444544450000000000000010ee00006d0000000000000000000000000000000000000000000000000000000000000000
+de6de26dee6dee6dee2ed6ed00000000444544450000030000000100ee00006d0000000000000000000000000000000000000000000000000000000000000000
+6d6de26dee6dee6dee2ed6d600000000444544550000303011111111ee00006d0000000000000000000000000000000000000000000000000000000000000000
+6de6d62dee6dee6de26d6ed600000000444544450000000000010000ee00006d0000000000000000000000000000000000000000000000000000000000000000
+6de6de2dee6dee6de2ed6ed600000000444544450000000000100000ee00006d0000000000000000000000000000000000000000000000000000000000000000
+e6d6de622222222226ed6d6e00000000444544450300000001000000ee00006d0000000000000000000000000000000000000000000000000000000000000000
+e6de6d622222222226d6ed6e00000000445544453030000011111111ee00006d0000000000000000000000000000000000000000000000000000000000000000
 d6de6de2000000012ed6ed6d55555555555555555555555500670067ee00006d0000000000000000000000000000000000000000000000000000000000000000
 de6d6de2000000102ed6d6ed588888855cccccc55999999566566656ee00006d0000000000000000000000000000000000000000000000000000000000000000
 de6de6d2000001002d6ed6ed580000855c0000c55900009500560056ee00006d0000000000000000000000000000000000000000000000000000000000000000
