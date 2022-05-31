@@ -21,7 +21,7 @@ function _init()
 	vacuum_speed = 0.5 --slowdown while using vacuum
 	damage = 1 -- vacuum damage
 	make_globals() -- dont play with this
-	make_luigi()
+	make_player(0)
 	-- play music
 	music(0)
 end
@@ -69,7 +69,7 @@ end
 
 function _draw()
 	-- draw the room
-	update_cam(luigi)
+	update_cam()
 	cls()
 	map()
 	
@@ -175,6 +175,7 @@ function make_globals()
 	poke(0x5f5c, 255) -- no key repeat
 	camx=0
 	camy=0
+	setup_characters()
 	setup_items()
 	setup_boos()
 	setup_map()		
@@ -195,8 +196,8 @@ function setup_map()
 				camymax=max(camymax,8*(yy-13))
 			end
 			if t==1 then
-				luigi_start_x = xx*8
-				luigi_start_y = yy*8
+				start_x = xx*8
+				start_y = yy*8
 				mset(xx,yy,97)
 			end
 			if contains(boo_indices,t) then
@@ -230,6 +231,10 @@ end
 -->8
 -- bros
 
+function setup_characters()
+	
+end
+
 function update_bros()
 	for bro in all(bros) do
 		if (bro.alive) update_bro(bro)
@@ -259,13 +264,14 @@ function return_bro()
 	return bro
 end
 
-function make_luigi()
+function make_player(ix)
 	luigi = return_bro()
 	luigi.sprite = 1
 	luigi.name = 'luigi'
+	luigi.player = ix
 	luigi.color = 3
-	luigi.x = luigi_start_x
-	luigi.y = luigi_start_y
+	luigi.x = start_x
+	luigi.y = start_y
 	add(bros,luigi)
 end
 
