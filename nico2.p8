@@ -13,6 +13,7 @@ function _init()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
+	damage = 10
 	
 	make_globals() -- dont play with this
 	make_luigi()
@@ -49,7 +50,7 @@ function update_gameplay()
 		if (bro.alive) move_bro(bro)
 	end
 	
-	move_boos()
+	update_boos()
 	
 	local vac_stop=true
 	for bro in all(bros) do
@@ -268,48 +269,9 @@ function kill_boo(b)
 	end
 end
 
-function move_boos()
+function update_boos()
 	for b in all(boos) do
-		local dx = b.dx
-		local dy = b.dy
-		if b.hurt then
-			dx = dx * 0.5
-			dy = dy * 0.5
-		end
-		b.hurt = false
-		b.x = b.x + dx
-		b.y = b.y + dy
-		if b.wallbump or b.king then
-			if (dx > 0 and bump_right(b)) b.dx=-b.dx
-			if (dx < 0 and bump_left(b)) b.dx=-b.dx
-			if (dy < 0 and bump_up(b)) b.dy=-b.dy
-			if (dy > 0 and bump_down(b)) b.dy=-b.dy
-		elseif b.x < camx-12 or 
-			b.x > camx+130 or
-			b.y < camy-12 or 
-			b.y > camy+130 then
-			if ((not b.big) and (not b.stomp)) del(boos,b)
-		end
-		if b.stomp then
-			if (b.z <= 0) b.dz=.6
-			b.z += b.dz
-			b.dz += -.01
-		end
-		if b.big and not b.easywall then
-			if timer%30==0 and timer_sec%3==0 then
-				if b.x > camx-6 and 
-					b.x < camx+130 and
-					b.y > camy-6 and 
-					b.y < camy+120 then
-					for i=0,15,1 do
-						local dbx=.35*cos(i/15)
-						local dby=.35*sin(i/15)
-						make_ball_boo(b.x,b.y,dbx,dby)
-					end
-					sfx(12)		
-				end
-			end
-		end
+		b.update_me(b)
 	end
 end
 
@@ -358,9 +320,9 @@ function make_item(x,y,sp)
 	add(items,item)
 end
 
-function return_boo()
+function return_boo(x,y,dx,dy,updater,s)
 	local boo = {}
-	boo.s = 33 -- sprite no.
+	boo.s = s or 33 -- sprite no.
 	boo.health=20
 	boo.hurt=false
 	boo.wallbump=false
@@ -369,53 +331,82 @@ function return_boo()
 	boo.ball=false
 	boo.stomp=false
 	boo.easywall=false
-	boo.dx=0
-	boo.dy=0
-	boo.x=0
-	boo.y=0
+	boo.dx= dx or 0
+	boo.dy= dy or 0
+	boo.x= x or 0
+	boo.y= y or 0
+	boo.update_me = updater or update_basic_boo
 	return boo
 end
 
+function _move_boo(b)
+	local dx = b.dx
+	local dy = b.dy
+	if b.hurt then
+		dx = dx * 0.5
+		dy = dy * 0.5
+	end
+	b.hurt = false
+	b.x = b.x + dx
+	b.y = b.y + dy
+end
+
+function _bounce_boo(b)
+	if (b.dx > 0 and bump_right(b)) b.dx=-b.dx
+	if (b.dx < 0 and bump_left(b)) b.dx=-b.dx
+	if (b.dy < 0 and bump_up(b)) b.dy=-b.dy
+	if (b.dy > 0 and bump_down(b)) b.dy=-b.dy
+end
+
+function update_basic_boo(b)
+	_move_boo(b)
+	if b.x < camx-12 or 
+		b.x > camx+130 or
+		b.y < camy-12 or 
+		b.y > camy+130 then
+	 del(boos,b)
+	end
+end
+
+function update_stomp_boo(b)
+	b.hurt = false
+	if (b.z <= 0) b.dz=.6
+	b.z += b.dz
+	b.dz += -.01
+end
+
 function make_stomp_boo(x,y)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
+	local boo = return_boo(x,y,0,0,update_stomp_boo,38)
 	boo.z=0
 	boo.dz=0
-	boo.s=38
 	boo.stomp=true
-	boo.s=38
 	add(boos,boo)
 end
 
 function make_ball_boo(x,y,dx,dy)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
-	boo.dx=dx
-	boo.dy=dy
+	local boo = return_boo(x,y,dx,dy,update_basic_boo,37)
 	boo.ball=true
-	boo.s=37
 	add(boos,boo)
 end
 
+function update_king_boo(b)
+	_move_boo(b)
+	_bounce_boo(b)
+end
+
 function make_king_boo(x,y)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
-	boo.dx=.5
-	boo.dy=.5
-	boo.s=40
+	local boo = return_boo(x,y,.5,.5,update_king_boo,40)
 	boo.king=true
 	boo.health=500
 	add(boos,boo)
 end
 
+function update_wall(b)
+	_move_boo(b)
+end
+
 function make_easy_wall(x,y)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
-	boo.s=36
+	local boo = return_boo(x,y,0,0,update_wall,42)
 	boo.big=true
 	boo.easywall=true
 	boo.health=500
@@ -427,12 +418,25 @@ function make_easy_wall(x,y)
 	end
 end
 
+function update_big_boo(b)
+	_move_boo(b)
+	if timer%30==0 and timer_sec%3==0 then
+		if b.x > camx-6 and 
+			b.x < camx+130 and
+			b.y > camy-6 and 
+			b.y < camy+120 then
+			for i=0,15,1 do
+				local dbx=.35*cos(i/15)
+				local dby=.35*sin(i/15)
+				make_ball_boo(b.x,b.y,dbx,dby)
+			end
+			sfx(12)		
+		end
+	end
+end
 
 function make_big_boo(x,y)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
-	boo.s=36
+	local boo = return_boo(x,y,0,0,update_big_boo,36)
 	boo.big=true
 	boo.health=200
 	add(boos,boo)
@@ -444,37 +448,39 @@ function make_big_boo(x,y)
 end
 
 function make_bounce_boo(x,y,dx,dy)
-	local boo = return_boo()
-	boo.x=x
-	boo.y=y
-	boo.dy=dy
-	boo.dx=dx
+	local boo = return_boo(x,y,dx,dy,update_bounce_boo)
 	boo.wallbump=true
 	add(boos,boo)
 end
 
+function update_bounce_boo(b)
+	_move_boo(b)
+	_bounce_boo(b)
+end
+
 function make_random_boo()
-	local boo = return_boo()
 	local speed = ghost_speed * (1.1-rnd(0.2))
+	local dx, dy, x, y
 	if rnd() < 0.5 then
-		boo.dx = 0
-		boo.dy = speed * sgn(rnd()-.5)
-		if boo.dy>0 then
-			boo.y = camy-8
+		dx = 0
+		dy = speed * sgn(rnd()-.5)
+		if dy>0 then
+			y = camy-8
 		else
-			boo.y= camy+128
+			y= camy+128
 		end
-		boo.x = camx + 8 + rnd(104)
+		x = camx + 8 + rnd(104)
 	else
-		boo.dy = 0
-		boo.dx = speed * sgn(rnd()-.5)
-		if boo.dx>0 then
-			boo.x = camx-8
+		dy = 0
+		dx = speed * sgn(rnd()-.5)
+		if dx>0 then
+			x = camx-8
 		else
-			boo.x= camx+128
+			x= camx+128
 		end
-		boo.y = camy+24 + rnd(80)	
+		y = camy+24 + rnd(80)	
 	end
+	local boo = return_boo(x,y,dx,dy)
 	add(boos,boo)
 end
 
@@ -774,7 +780,7 @@ function check_vacuum(bro)
 end
 
 function hurt_boo(b)
-	b.health = b.health-1
+	b.health = b.health-damage
 	if (b.health < 1) kill_boo(b)
 	b.hurt = true
 end
