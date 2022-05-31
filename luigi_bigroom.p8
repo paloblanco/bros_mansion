@@ -210,12 +210,17 @@ function setup_map()
 	end
 end
 
-function update_cam(bro)
-	camx = max(camxmin,bro.x-60)
-	camy = max(camymin,bro.y-60)
-	camx = min(camxmax,camx)
-	camy = min(camymax,camy)
-	camera(camx,camy)
+function update_cam()
+	for bro in all(bros) do
+		if bro.alive then
+			camx = max(camxmin,bro.x-60)
+			camy = max(camymin,bro.y-60)
+			camx = min(camxmax,camx)
+			camy = min(camymax,camy)
+			camera(camx,camy)
+			return
+		end
+	end
 end
 
 function update_globals()
@@ -355,7 +360,7 @@ function check_vacuum(bro)
 end
 
 function draw_vacuum(bro)
-	local ccount=4
+	local ccount=6
 	for i=0,ccount-1,1 do
 		local cycle = ((timer+i*15/ccount)%15) 
 		local dist = vacuum_range*(1-(cycle/15))
@@ -404,8 +409,6 @@ function hurt_bro(bro)
 		sfx(6)
 	end
 end
-
-
 
 
 function collide_items(bro)
@@ -762,6 +765,8 @@ function get_1up(item,bro)
 			bbro.alive=true
 			bbro.health=regen_health
 			bbro.timer=50
+			bbro.x=bro.x+8+2*bbro.player
+			bbro.y=bro.y
 		end
 	end
 end
@@ -888,7 +893,7 @@ end
 function collide(a,b,r)
 	-- a and b both must have x and y
 	-- r is radius
-	local r = r or 7
+	local r = r or 8
 	if a.x+r > b.x and
 		b.x+r > a.x and
 		a.y+r > b.y and
