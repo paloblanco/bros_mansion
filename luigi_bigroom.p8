@@ -266,8 +266,8 @@ function return_bro()
 	bro.name = 'luigi'
 	bro.color = 3
 	bro.alive = true
-	bro.x = 50
-	bro.y = 76
+	bro.x = 0
+	bro.y = 0
 	bro.sprite = 1
 	bro.health = start_health
 	
