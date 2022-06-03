@@ -9,8 +9,8 @@ __lua__
 
 function _init()
 	-- game variables
-	start_health = 5
-	regen_health = 5 -- how much you come back with
+	start_health = 10
+	regen_health = 10 -- how much you come back with
 	bro_speed = 0.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
@@ -86,9 +86,13 @@ function _draw()
 	rect(0,112,127,127,6)
 	
 	for bro in all(bros) do
-		brohearts = bro.name..": "
-		for i=1,bro.health,1 do
-			brohearts = brohearts.."♥"
+		brohearts = bro.name.." "
+		if bro.health < 4 then
+			for i=1,bro.health,1 do
+				brohearts = brohearts.."♥"
+			end
+		else
+			brohearts = brohearts.."♥X"..bro.health
 		end
 		print(brohearts,2,114+6*bro.player,bro.color)
 	end
@@ -161,20 +165,24 @@ end
 function make_globals()
 	timer = 0
 	timer_sec = 0
-	coins = {}
 	coin_count = 0
 	gamestart = false
 	gameend = false
+	
 	boos = {}
 	bros = {}
 	items = {}
+	
 	trophy = false
 	redkey = false
 	bluekey = false
 	orangekey = false
+	
 	poke(0x5f5c, 255) -- no key repeat
+	
 	camx=0
 	camy=0
+	
 	setup_characters()
 	setup_items()
 	setup_boos()
@@ -232,7 +240,19 @@ end
 -- bros
 
 function setup_characters()
-	
+	bro_types={}
+	local bb = make_bro_type("luigi",3,1)
+	add(bro_types,b1)
+	local bb = make_bro_type("mario",8,3)
+	add(bro_types,b1)
+end
+
+function make_bro_type(name,colix,sprite)
+	local b = {}
+	b.name=name or "luigi"
+	b.colix=colix or 3
+	b.sprite= sprite or 1
+	return b
 end
 
 function update_bros()
