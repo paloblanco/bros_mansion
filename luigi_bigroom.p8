@@ -44,7 +44,7 @@ function update_gameplay()
  
  -- gamend?
  gamend=true
- for bro in all(bros) do
+ for _,bro in pairs(bros) do
  	if (bro.alive) gamend = false
  end
  if (trophy) gamend = true
@@ -66,7 +66,7 @@ function draw_gameplay()
 	map()
 	
 	-- draw characters and stuff
-	for bro in all(bros) do
+	for _,bro in pairs(bros) do
 		if (bro.alive) draw_bro(bro)
 	end
 	
@@ -81,7 +81,7 @@ end
 function draw_status_bar()
 	rectfill(0,112,128,128,0)
 	rect(0,112,127,127,6)
-	for bro in all(bros) do
+	for _,bro in pairs(bros) do
 		brohearts = bro.name.." "
 		if bro.health < 4 then
 			for i=1,bro.health,1 do
@@ -109,7 +109,7 @@ end
 
 function update_collisions()
 	local vac_stop=true
-	for bro in all(bros) do
+	for _,bro in pairs(bros) do
 		if bro.alive then
 			check_vacuum(bro)
 			collide_boos(bro)
@@ -200,7 +200,7 @@ function setup_map()
 end
 
 function update_cam()
-	for bro in all(bros) do
+	for _,bro in pairs(bros) do
 		if bro.alive then
 			camx = max(camxmin,bro.x-60)
 			camy = max(camymin,bro.y-60)
@@ -236,7 +236,7 @@ function make_bro_type(name,colix,sprite)
 end
 
 function update_bros()
-	for bro in all(bros) do
+	for _,bro in pairs(bros) do
 		if (bro.alive) update_bro(bro)
 	end
 end
@@ -275,10 +275,11 @@ function make_player(ix)
 		pl.x = start_x
 		pl.y = start_y
 	else
-		pl.x = bros[1].x + 10*ix 
-		pl.y = bros[1].y 
+		pl.x = bros[0].x + 10*ix 
+		pl.y = bros[0].y 
 	end
-	add(bros,pl)
+	--add(bros,pl)
+	bros[ix]=pl
 end
 
 
