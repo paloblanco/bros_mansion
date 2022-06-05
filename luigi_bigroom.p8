@@ -29,6 +29,7 @@ function make_game_variables()
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
 	damage = 100 -- vacuum damage
+	camera_speed = 10 --lower is faster!
 end
 
 function update_gameplay()
@@ -41,6 +42,7 @@ function update_gameplay()
 	update_boos()
 	update_collisions()
 	try_increase_ghosts()
+	check_cameras()
  
  -- gamend?
  gamend=true
@@ -150,6 +152,7 @@ function make_globals()
 	boos = {}
 	bros = {}
 	items = {}
+	cameras = {}
 	
 	trophy = false
 	redkey = false
@@ -188,8 +191,10 @@ function setup_map()
 				start_x = xx*8
 				start_y = yy*8
 				mset(xx,yy,97)
-			end
-			if contains(boo_indices,t) then
+			elseif t==39 then
+				make_camera(xx*8,yy*8)
+				mset(xx,yy,97)
+			elseif contains(boo_indices,t) then
 				boo_list[t](xx*8,yy*8)
 				mset(xx,yy,97)
 			elseif contains(item_indices,t) then
@@ -201,6 +206,10 @@ function setup_map()
 end
 
 function update_cam()
+	if camtarget then
+		set_cam(camtarget)
+		return
+	end
 	for ix=0,3,1 do
 		local bro = bros[ix]
 		if bro and bro.alive then
@@ -218,8 +227,8 @@ function set_cam(targ)
 	local deltax = camtargx-camx
 	local deltay = camtargy-camy
 	if abs(deltax)>4 or abs(deltay)>4 then
-		camx = camx + (deltax)/3
-		camy = camy + (deltay)/3
+		camx = camx + (deltax)/camera_speed
+		camy = camy + (deltay)/camera_speed
 	else
 		camx=camtargx
 		camy=camtargy
@@ -810,15 +819,36 @@ function get_orangekey(item,bro)
 end
 			
 
-function make_item(x,y,sp,grabbable)
+function make_item(x,y,sp)
 	local item = {}
 	item.x=x
 	item.y=y
 	item.sprite = sp
-	item.grabbable = grabbable or true
 	item.name = get_item_name(sp)
 	item.get_me = get_item_func(sp)
 	add(items,item)
+end
+
+function make_camera(x,y)
+	local cam = {}
+	cam.x=x+4
+	cam.y=y
+	add(cameras,cam)
+end
+
+function check_cameras()
+	for c in all(cameras) do
+		for ix=0,3,1 do
+			local b = bros[ix]
+			if b then
+				if collide(c,b,60) then
+					camtarget=c
+					return
+				end
+			end
+		end
+	end
+	camtarget=nil
 end
 -->8
 -- all entities
@@ -980,8 +1010,13 @@ function draw_title()
 end
 
 function start_gameloop()
+	fade_out()
 	_update60 = update_gameplay
 	_draw = draw_gameplay
+	for i=1,20*camera_speed,1 do
+		update_cam()
+	end
+	fade_in()
 end
 
 function start_end()
@@ -1003,6 +1038,26 @@ function draw_end()
 	if (trophy) coprint("you win!",ys,0,7)
 	fscore = coin_count+timer_sec
 	coprint("final score: "..fscore,ys+12,10,0)
+end
+
+function fade_in()
+	local imax=45
+	for i=0,imax,1 do
+		_draw()
+		local y = 127*(i/imax)
+		rectfill(0,y,127,127,1)
+		flip()
+	end
+end
+
+function fade_out()
+	local imax=45
+	for i=0,imax,1 do
+		_draw()
+		local y = 127*(i/imax)
+		rectfill(0,0,127,y,1)
+		flip()
+	end
 end
 __gfx__
 00000000000000000033373000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1099,7 +1154,7 @@ e26dee6dee6dee6dee6dee2e00000000000000000000000000000000000000000000000000000000
 16161616161616161664161616641616161515151515151515151516161616161616161616161626454545454545454500000000000000000000000000000000
 4545454545454545450633165316164216161616161622161616161616a216161316161616161616461616167516161616167516161616361616161616232316
 16161616161616161664161616641616161616621616161616161616161616161616161616161626454545454545454500000000000000000000000000000000
-45454545454545454506161616161616161616161616161616161616161616161616161616161616461616167516161612167516161616361616221616232316
+45454545454545454506161616161616161616721616161616161616161616161616161616161616461616167516167212167516161616361616221616232316
 16161616161616161664161616641616161616621616161616161616161616161616821616161626454545454545454500000000000000000000000000000000
 45454545454545454507171717171716161616161616161616171717171717171717171717171717061616167516161616167512161616261717162216161626
 17171717171612161664161216641616161616621616161616161616161616161616161616161626454545454545454500000000000000000000000000000000
