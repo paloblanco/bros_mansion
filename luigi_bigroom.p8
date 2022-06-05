@@ -40,6 +40,7 @@ function update_gameplay()
  
 	update_bros()
 	update_boos()
+	update_all_coins()
 	update_collisions()
 	try_increase_ghosts()
 	check_cameras()
@@ -70,6 +71,7 @@ function draw_gameplay()
 	draw_all_boos()
 	draw_all_items()
 	draw_furniture()
+	draw_all_coins()
 	
 	-- status bar
 	camera()
@@ -155,6 +157,7 @@ function make_globals()
 	items = {}
 	cameras = {}
 	furniture = {}
+	coins = {}
 	
 	trophy = false
 	redkey = false
@@ -377,16 +380,32 @@ function check_vacuum(bro)
 	local v={}
 	v.x = bro.vacx*vacuum_range+bro.x
 	v.y = bro.vacy*vacuum_range+bro.y
-	local d = vacuum_width
+	v.d = vacuum_width
+	v.dplus = 0
+	_vacuum_boos(v)
+	_vacuum_furniture(v)
+end
+
+function _vacuum_boos(v)
 	for b in all(boos) do
 		if not b.ball then
-			local dplus=0
-			if (b.big or b.king) dplus=8
-	  if collide(v,b,d+dplus) then
+			if (b.big or b.king) v.dplus=8
+	  if collide(v,b,v.d+v.dplus) then
 	  	if (not b.stomp) hurt_boo(b)
 	  	if (b.stomp and b.z < 2) hurt_boo(b)
 	  end
   end
+ end
+end
+
+function _vacuum_furniture(v)
+	for f in all(furniture) do
+		local ff = {}
+		ff.x = f.x+8
+		ff.y = f.y
+ 	if collide(v,ff,v.d+4) then
+ 	 hurt_furn(f)
+ 	end
  end
 end
 
@@ -491,7 +510,8 @@ function kill_boo(b)
 	if b.king then
 		make_item(b.x,b.y,52)
 	else
-		random_item(b.x,b.y)
+		--random_item(b.x,b.y)
+		make_coin(b.x,b.y)
 	end
 	sfx(8)
 	if b.big then
@@ -539,10 +559,21 @@ function _move_boo(b)
 end
 
 function _bounce_boo(b)
-	if (b.dx > 0 and bump_right(b)) b.dx=-b.dx
-	if (b.dx < 0 and bump_left(b)) b.dx=-b.dx
-	if (b.dy < 0 and bump_up(b)) b.dy=-b.dy
-	if (b.dy > 0 and bump_down(b)) b.dy=-b.dy
+	if b.dx > 0 and bump_right(b) then
+		b.dx=-b.dx
+		snap_left(b)
+	elseif b.dx < 0 and bump_left(b) then
+		b.dx=-b.dx
+		snap_right(b)
+	end
+	
+	if b.dy < 0 and bump_up(b) then
+		b.dy=-b.dy
+		snap_down(b)
+	elseif b.dy > 0 and bump_down(b) then
+		b.dy=-b.dy
+		snap_up(b)
+	end
 end
 
 function update_basic_boo(b)
@@ -861,6 +892,7 @@ function make_furn(x,y,sp)
 	furn.y=y
 	furn.sp=sp
 	furn.health=60
+	furn.hurt=false
 	mset(x\8,y\8,86)
 	mset(1+(x\8),y\8,86)
 	add(furniture,furn)
@@ -868,13 +900,65 @@ end
 
 function draw_furn(f)
 	draw_shadow(f.x,f.y)
+	if (f.hurt and timer%4>1) return
 	draw_shadow(8+f.x,f.y)
 	spr(f.sp,f.x,f.y-2-8,2,2)
+	f.hurt=false
 end
 
 function draw_furniture()
 	for f in all(furniture) do
 		draw_furn(f)
+	end
+end
+
+function hurt_furn(f)
+	f.hurt = true
+	f.health = max(0,f.health-1)
+	if (f.health <= 0) return
+	if f.health%5 == 0 then
+		make_coin(f.x+7,f.y)
+	end
+end
+
+function make_coin(x,y)
+	local coin = {}
+	coin.x=x
+	coin.y=y
+	coin.z=0
+	coin.sp=48
+	coin.dx=.5-rnd()
+	coin.dy=.5-rnd()
+	coin.dz=1+rnd()
+	add(coins,coin)
+end
+
+function update_coin(c)
+	c.x += c.dx
+	c.y += c.dy
+	_bounce_boo(c)
+	c.dz += -.08
+	c.z += c.dz
+	if c.z <= 0 then
+		make_item(c.x,c.y,48)
+		del(coins,c)
+	end
+end
+
+function draw_coin(c)
+	draw_shadow(c.x,c.y)
+	spr(c.sp,c.x,c.y-2-c.z)
+end
+
+function update_all_coins()
+	for c in all(coins) do
+		update_coin(c)
+	end
+end
+
+function draw_all_coins()
+	for c in all(coins) do
+		draw_coin(c)
 	end
 end
 -->8
