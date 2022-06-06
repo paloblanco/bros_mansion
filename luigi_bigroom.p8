@@ -44,6 +44,7 @@ function update_gameplay()
 	update_collisions()
 	try_increase_ghosts()
 	check_cameras()
+	update_alarms()
  
  -- gamend?
  gamend=true
@@ -76,6 +77,18 @@ function draw_gameplay()
 	-- status bar
 	camera()
 	draw_status_bar()
+	
+	-- alarm ring
+	draw_alarm()
+end
+
+function draw_alarm()
+	for k,b in pairs(bros) do
+		if b.alarm then
+			rect(2,2,125,110,7)
+			return
+		end
+	end
 end
 
 function draw_status_bar()
@@ -114,6 +127,7 @@ function update_collisions()
 			check_vacuum(bro)
 			collide_boos(bro)
 			collide_items(bro)
+			collide_alarms(bro)
 			if (bro.vacuum) vac_stop = false
 		end
 	end
@@ -158,6 +172,7 @@ function make_globals()
 	cameras = {}
 	furniture = {}
 	coins = {}
+	booalarms = {}
 	
 	trophy = false
 	redkey = false
@@ -197,6 +212,10 @@ function setup_map()
 				start_y = yy*8
 				mset(xx,yy,97)
 			elseif t==39 then
+				make_camera(xx*8,yy*8)
+				mset(xx,yy,97)
+			elseif t==44 then
+				make_boo_alarm(xx*8,yy*8)
 				make_camera(xx*8,yy*8)
 				mset(xx,yy,97)
 			elseif contains(boo_indices,t) then
@@ -292,6 +311,7 @@ function return_bro()
 	bro.vacx = 1
 	bro.vacy = 0
 	bro.player = 0 --  player index, for multiplayer
+	bro.alarm=nil
 	return bro
 end
 
@@ -364,6 +384,9 @@ function update_bro(bro)
 	if (dx < 0 and bump_left(bro)) snap_right(bro)
 	if (dy < 0 and bump_up(bro)) snap_down(bro)
 	if (dy > 0 and bump_down(bro)) snap_up(bro)
+	
+	-- see if trapped by alarm
+	check_alarm(bro)
 	
 	-- timer
 	bro.timer = max(0,bro.timer-1)
@@ -494,6 +517,27 @@ function collide_boos(bro)
  end
 end
 
+function collide_alarms(bro)
+	for ba in all(booalarms) do
+		if collide(bro,ba,60) then
+			start_booalarm(ba)
+			bro.alarm=ba
+		end
+	end
+end
+
+function check_alarm(bro)
+	if (not bro.alarm) return
+	local ba = bro.alarm
+	if not ba.active then
+		bro.alarm=nil
+	else
+		if (bro.x > ba.x+52) snap_left(bro)
+		if (bro.x < ba.x-52) snap_right(bro)
+		if (bro.y > ba.y+52) snap_up(bro)
+		if (bro.y < ba.y-52) snap_down(bro)	
+	end
+end
 -->8
 -- boos
 
@@ -974,6 +1018,38 @@ function draw_all_coins()
 		draw_coin(c)
 	end
 end
+
+function make_boo_alarm(x,y)
+	local ba = {}
+	ba.x=x+4
+	ba.y=y
+	ba.active=false
+	add(booalarms,ba)
+end
+
+function start_booalarm(ba)
+	ba.active=true
+end
+
+function update_boo_alarm(ba)
+	if (not ba.active) return
+	local haveboo=false
+	for b in all(boos) do
+		if collide(ba,b,60) then
+			haveboo=true
+		end
+	end
+	if not haveboo then
+		ba.active=false
+		del(booalarms,ba)
+	end
+end
+
+function update_alarms()
+	for ba in all(booalarms) do
+		update_boo_alarm(ba)
+	end
+end
 -->8
 -- all entities
 
@@ -1278,7 +1354,7 @@ e26dee6dee6dee6dee6dee2e01000000444544450000000000000000000000000000000000000000
 16161616161616161664161616641616161515151515151515151516161616161616161616161626454545454545454500000000000000000000000000000000
 4545454545454545450633165316164216161616161622161616161616a216161316161616161616461616167516161616167516161616361616161616232316
 16161616161616161664161616641616161616621616161616161616161616161616161616161626454545454545454500000000000000000000000000000000
-45454545454545454506161616161616161616721616161616161616161616161616161616161616461616167516167212167516161616361616221616232316
+45454545454545454506161616161616161616c21616161616161616161616161616161616161616461616167516167212167516161616361616221616232316
 16161616161616161664161616641616161616621616161616161616161616161616821616161626454545454545454500000000000000000000000000000000
 45454545454545454507171717171716161616161616161616171717171717171717171717171717061616167516161616167512161616261717162216161626
 17171717171612161664161216641616161616621616161616161616161616161616161616161626454545454545454500000000000000000000000000000000
