@@ -381,16 +381,20 @@ function check_vacuum(bro)
 	v.x = bro.vacx*vacuum_range+bro.x
 	v.y = bro.vacy*vacuum_range+bro.y
 	v.d = vacuum_width
+	v.dx = bro.vacx
+	v.dy = bro.vacy
 	v.dplus = 0
 	_vacuum_boos(v)
 	_vacuum_furniture(v)
+	_vacuum_items(v)
 end
 
 function _vacuum_boos(v)
 	for b in all(boos) do
 		if not b.ball then
-			if (b.big or b.king) v.dplus=8
-	  if collide(v,b,v.d+v.dplus) then
+			local dp=0
+			if (b.big or b.king) dp=8
+	  if collide(v,b,v.d+dp) then
 	  	if (not b.stomp) hurt_boo(b)
 	  	if (b.stomp and b.z < 2) hurt_boo(b)
 	  end
@@ -405,6 +409,15 @@ function _vacuum_furniture(v)
 		ff.y = f.y
  	if collide(v,ff,v.d+4) then
  	 hurt_furn(f)
+ 	end
+ end
+end
+
+function _vacuum_items(v)
+	for i in all(items) do
+ 	if collide(v,i,v.d) then
+ 	 i.x += -v.dx*.25
+ 	 i.y += -v.dy*.25
  	end
  end
 end
