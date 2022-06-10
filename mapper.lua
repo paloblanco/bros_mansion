@@ -8,6 +8,8 @@ function _init()
     
     -- mapping vars
     current_tile = 0
+    undo_stack = {}
+    viewgrid = true
 
     -- control vars
     -- mouse
@@ -18,16 +20,80 @@ function _init()
     m2 = false
     m2p = false
     ms = 0 --scroll
+    key=nil
+    bucket=false
+    movespeed=6
 end
 
 function _update()
     controls()
-    if (m0) place_tile()
+    if (m0 and (not bucket)) place_tile()
+    if (m0 and (bucket)) fill_tile()
     if (m1) dropper_tile()
     if (check_key("5")) save_local()
+
+    -- keyboard
+    if (check_key("g")) viewgrid = not viewgrid
+    if (check_key("b")) bucket = not bucket
+    if (check_key("z")) undo()
+
 end
 
+function fill_tile()
+    local xx = mx\8
+    local yy = my\8
+    local tt = mget(xx,yy)
+    local tnew = current_tile
+    if (tt != tnew) flood(xx,yy,tnew,tt)
+end
 
+function flood(xx,yy,tnew,tt)
+    local t_here = mget(xx,yy)
+    if (t_here != tt) return
+    if (xx<0) return
+    if (xx>127) return
+    if (yy<0) return
+    if (yy>63) return
+    add_undo(xx,yy)
+    mset(xx,yy,tnew)
+    -- _draw()
+    -- flip()
+    flood(xx-1,yy,tnew,tt)
+    flood(xx+1,yy,tnew,tt)
+    flood(xx,yy-1,tnew,tt)
+    flood(xx,yy+1,tnew,tt)
+end
+
+function add_undo(xx,yy,kind)
+    local u = {}
+    u.xx=xx
+    u.yy=yy
+    u.tt=mget(xx,yy)
+    u.t =flr(t())
+    u.kind = kind or "tile"
+    add(undo_stack,u)    
+    if (#undo_stack > 10000) del(undo_stack,undo_stack[1])
+end
+
+function pop(t)
+    local pop_item = t[#t]
+    del(t,pop_item)
+    return pop_item
+end
+
+function undo()
+    if (#undo_stack<1) return
+    local u = pop(undo_stack)
+    if u.kind=="tile" then
+        mset(u.xx,u.yy,u.tt)
+    elseif u.kind=="flood" then -- this is broken right now
+        local tt = mget(u.xx,u.yy)
+        flood(u.xx,u.yy,u.t,tt)
+    end
+    if (#undo_stack<1) return
+    local tnext = undo_stack[#undo_stack].t
+    if (u.t==tnext) undo()
+end
 
 function dropper_tile()
     local xx = mx\8
@@ -40,7 +106,10 @@ end
 function place_tile()
     local xx = mx\8
     local yy = my\8
+    local t_here=mget(xx,yy)
+    if (t_here==current_tile) return
     if xx>=0 and xx < 128 and yy>=0 and yy < 64 then
+        add_undo(xx,yy)
         mset(xx,yy,current_tile)
     end
 end
@@ -52,14 +121,31 @@ function _draw()
         draw_all()
     end
     draw_picker()
+    draw_status()
 end
 
 function draw_all()
     cls(1)
     palt(0)
     map()
-    circfill(mx,my,2)
+    grid()
+    circfill(mx,my,2,7)
     palt()
+end
+
+function grid()
+    if (not viewgrid) return
+    gridoffx=0
+    gridoffy=0
+    gridx=16
+    gridy=14
+    gcolor=6
+    for xx=gridoffx,127,gridx do
+        line(xx*8,0,xx*8,64*8,gcolor)
+    end
+    for yy=gridoffy,63,gridy do
+        line(0,yy*8,128*8,yy*8,gcolor)
+    end
 end
 
 function camera_all(x,y)
@@ -68,7 +154,7 @@ function camera_all(x,y)
 end
 
 function controls()
-    move_speed = 4
+    move_speed = movespeed
     -- ESDF for camera
     if (btn(0,1)) camx += -move_speed
     if (btn(1,1)) camx += move_speed
@@ -86,7 +172,7 @@ function controls()
     if (current_tile<0) current_tile = current_tile+8*16 
     if (current_tile>127) current_tile = current_tile-8*16
 
-    
+    key = get_key()
 
 end
 
@@ -108,13 +194,24 @@ function draw_picker()
     if (myraw > 128+64) circfill(mxraw,myraw-128,2)
 end
 
+function draw_status()
+    _map_display(3)
+    camera()
+    line(0,100,128,100,7)
+    if bucket then
+        print("fill",1,102,7)
+    else
+        print("point",1,102,7)
+    end
+end
+
 -- control stuff
 function get_key()
     return(stat(31))
 end
 
-function check_key(key)
-    return get_key()==key
+function check_key(k)
+    return key==k
 end
 
 function get_m0()
