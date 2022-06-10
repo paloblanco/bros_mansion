@@ -30,9 +30,12 @@ function _update()
     if (m0 and (not bucket)) place_tile()
     if (m0 and (bucket)) fill_tile()
     if (m1) dropper_tile()
-    if (check_key("5")) save_local()
+    
 
     -- keyboard
+    if (check_key("5")) save_local()
+    if (check_key("4")) save_export()
+
     if (check_key("g")) viewgrid = not viewgrid
     if (check_key("b")) bucket = not bucket
     if (check_key("z")) undo()
@@ -177,7 +180,14 @@ function controls()
 end
 
 function save_local()
-    cstore(0,0,0X3000)
+    cstore(0,0,0X3100)
+end
+
+function save_export()
+    cstore(0,0,0X3100,"luigi_bigroom.p8")
+end
+
+function save_import()
 end
 
 function draw_picker()
