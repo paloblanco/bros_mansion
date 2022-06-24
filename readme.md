@@ -75,4 +75,4 @@ If you also want to be able to edit the game through your web browser, you can d
 
 ### cheatsheet
 
-pico8 -displays_x 1 -displays_y 2
+pico8 -displays_x 2 -displays_y 2 mapper.p8

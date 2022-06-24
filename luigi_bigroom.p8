@@ -50,6 +50,7 @@ function update_gameplay()
 	update_boos()
 	update_all_coins()
 	update_collisions()
+	update_all_pops()
 	try_increase_ghosts()
 	check_cameras()
 	update_alarms()
@@ -81,6 +82,7 @@ function draw_gameplay()
 	draw_all_items()
 	draw_furniture()
 	draw_all_coins()
+	draw_all_pops()
 	
 	-- status bar
 	camera()
@@ -162,9 +164,11 @@ end
 
 function draw_all_items()
 	for i in all(items) do
-		if not fget(mget(i.x\8,i.y\8),0) then
+		if i.draw_me then
 			draw_shadow(i.x,i.y)
 			spr(i.sprite,i.x,i.y-2)
+		elseif not fget(mget(i.x\8,i.y\8),0) then
+			i.draw_me=true
 		end
 	end
 end
@@ -182,6 +186,7 @@ function make_globals()
 	cameras = {}
 	furniture = {}
 	coins = {}
+	pops = {}
 	booalarms = {}
 	softwalls = {}
 	
@@ -599,6 +604,7 @@ function kill_boo(b)
 	if b.big then
 		set_map_around(b.x,b.y,97)
 	end
+	if (not b.big and not b.king) make_pop(b.x+4,b.y+4)
 end
 
 function update_boos()
@@ -757,7 +763,7 @@ function make_king_boo(x,y)
 	.5,update_king_boo,40,
 	draw_king_boo)
 	boo.king=true
-	boo.health=500
+	boo.health=400
 	add(boos,boo)
 end
 
@@ -780,7 +786,7 @@ function make_easy_wall(x,y)
 	update_wall,42,draw_wall)
 	boo.big=true
 	boo.easywall=true
-	boo.health=500
+	boo.health=300
 	add(boos,boo)
 	set_map_around(x,y,86)
 end
@@ -975,6 +981,7 @@ function make_item(x,y,sp)
 	item.sprite = sp
 	item.name = get_item_name(sp)
 	item.get_me = get_item_func(sp)
+	item.draw_me=false
 	add(items,item)
 end
 
@@ -1032,6 +1039,8 @@ function hurt_furn(f)
 	if (f.health <= 0) return
 	if f.health%5 == 0 then
 		make_coin(f.x+7,f.y)
+		make_pop(f.x+rnd(16),f.y-8+rnd(16))
+		sfx(14)
 	end
 end
 
@@ -1054,6 +1063,7 @@ function update_coin(c)
 	c.dz += -.08
 	c.z += c.dz
 	if c.z <= 0 then
+		sfx(14)
 		make_item(c.x,c.y,48)
 		del(coins,c)
 	end
@@ -1073,6 +1083,37 @@ end
 function draw_all_coins()
 	for c in all(coins) do
 		draw_coin(c)
+	end
+end
+
+function make_pop(x,y)
+	local pop = {}
+	pop.x=x
+	pop.y=y
+	pop.timer=7
+	pop.size={5,4,3,2,1,4}
+	add(pops,pop)
+end
+
+function draw_pop(p)
+	local s = p.size[flr(p.timer+.5)]
+	if p.timer>=6 then
+		circfill(p.x,p.y,s,7)
+	else
+		circ(p.x,p.y,s,7)
+	end
+end
+
+function update_all_pops()
+	for p in all(pops) do
+		p.timer += -.5
+		if (p.timer <= 0) del(pops,p)
+	end
+end
+
+function draw_all_pops()
+	for p in all(pops) do
+		draw_pop(p)
 	end
 end
 
@@ -1118,15 +1159,30 @@ end
 
 function hurt_wall(w)
 	w.health += -damage
+	if w.health%10==2 then
+		make_pop(w.x+1+rnd(6),w.y+1+rnd(6))
+		sfx(15,-2)
+		sfx(15)
+	end
 	if w.health <= 0 then
+		sfx(15,-2)
+		sfx(16,-2)
+		sfx(16)
 		breakwall(w.x\8,w.y\8)
 		del(softwalls,w)
+		for ss in all(softwalls) do
+			if collide(w,ss,10) then
+				del(softwalls,ss)
+			end
+		end
 	end
 end
 
 function breakwall(xx,yy)
 	if fget(mget(xx,yy),4) then
 		mset(xx,yy,115)
+		make_pop(xx*8+4,yy*8+4)
+		update_all_pops()
 		_draw()
 		flip()
 		breakwall(xx-1,yy)
@@ -1696,6 +1752,9 @@ __sfx__
 011018001305300000000000662500000086251305300000000000662500000086251305300000000000662500000086251305300000000000662500000086250000000000000000000000000000000000000000
 0003000026053280531335110351153511335118351163511d3511c35126351233510000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 070a00000a355073501f3552235022351000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010400001d32527325000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+070300001d6521d6521d6520000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00060000246533505331053270531965314652106510d651000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __music__
 01 090b4344
 02 0a0b4344
