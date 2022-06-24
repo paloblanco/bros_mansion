@@ -58,19 +58,20 @@ If you also want to be able to edit the game through your web browser, you can d
 - add playable characters
 - change characters at game start
     - function that pauses game and lets you switch
-- make sprites stop dissappearing in walls
-- add effects and sfx when spraying walls
-- add pre-routine to make hidden wall sprites match normal sprites
-- biggie health from 500 to 400
-- sfx when coins bounce
-- extra graphics on bookcases, 
-- more kinds of furniture
+- ~~make sprites stop dissappearing in walls~~
+- ~~add effects and sfx when spraying walls~~
+- ~~add pre-routine to make hidden wall sprites match normal sprites~~
+- ~~biggie health from 500 to 400~~
+- ~~sfx when coins bounce~~
+- ~~extra graphics on bookcases~~, 
 - king boo cannot leave fight rooms
 - maze graphics (maybe stairs for floor texture?)
+- title screen
+- graphics screen
 
 ## nice to have
 - run button
-- 
+- more kinds of furniture 
 
 
 ### cheatsheet
