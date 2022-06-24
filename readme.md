@@ -54,5 +54,25 @@ If you also want to be able to edit the game through your web browser, you can d
 
 
 ## To do:
-- make stomping bad guy (sprite 60)
-- add peach and third player
+- ~~make stomping bad guy (sprite 60)~~
+- add playable characters
+- change characters at game start
+    - function that pauses game and lets you switch
+- make sprites stop dissappearing in walls
+- add effects and sfx when spraying walls
+- add pre-routine to make hidden wall sprites match normal sprites
+- biggie health from 500 to 400
+- sfx when coins bounce
+- extra graphics on bookcases, 
+- more kinds of furniture
+- king boo cannot leave fight rooms
+- maze graphics (maybe stairs for floor texture?)
+
+## nice to have
+- run button
+- 
+
+
+### cheatsheet
+
+pico8 -displays_x 1 -displays_y 2
