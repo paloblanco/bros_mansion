@@ -63,15 +63,19 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~biggie health from 500 to 400~~
 - ~~sfx when coins bounce~~
 - ~~extra graphics on bookcases~~, 
-- king boo cannot leave fight rooms
-- maze graphics (maybe stairs for floor texture?)
+- ~~king boo cannot leave fight rooms~~
 - ~~title screen~~
 - graphics screen
+- camera only follows lead bro
+- offscreen bros snap to lead bro
 
 ## nice to have
 - run button
 - more kinds of furniture 
 - function that pauses game and lets you switch
+- level music
+- hidden collectibles
+- maze graphics (maybe stairs for floor texture?)
 
 
 ### cheatsheet
