@@ -55,9 +55,8 @@ If you also want to be able to edit the game through your web browser, you can d
 
 ## To do:
 - ~~make stomping bad guy (sprite 60)~~
-- add playable characters
-- change characters at game start
-    - function that pauses game and lets you switch
+- ~~add playable characters~~
+- ~~change characters at game start~~
 - ~~make sprites stop dissappearing in walls~~
 - ~~add effects and sfx when spraying walls~~
 - ~~add pre-routine to make hidden wall sprites match normal sprites~~
@@ -66,12 +65,13 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~extra graphics on bookcases~~, 
 - king boo cannot leave fight rooms
 - maze graphics (maybe stairs for floor texture?)
-- title screen
+- ~~title screen~~
 - graphics screen
 
 ## nice to have
 - run button
 - more kinds of furniture 
+- function that pauses game and lets you switch
 
 
 ### cheatsheet
