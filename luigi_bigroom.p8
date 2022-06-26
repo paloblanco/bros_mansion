@@ -12,6 +12,7 @@ function _init()
 	make_game_variables()
 	make_globals() -- dont play with this
 	make_player(0)
+	mainbro = bros[0]
 	fix_invisible_tiles()
 	start_title()
 end
@@ -26,8 +27,8 @@ end
 function make_game_variables()
 	-- game variables
 	-- things like speed and freq.
-	start_health = 20
-	regen_health = 10 -- how much you come back with
+	start_health = 5
+	regen_health = 3 -- how much you come back with
 	bro_speed = 0.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
@@ -36,7 +37,7 @@ function make_game_variables()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 2 -- vacuum damage
+	damage = 1 -- vacuum damage
 	camera_speed = 10 --lower is faster!
 end
 
@@ -52,6 +53,7 @@ function update_gameplay()
 	update_collisions()
 	update_all_pops()
 	try_increase_ghosts()
+	update_mainbro()
 	check_cameras()
 	update_alarms()
  
@@ -93,11 +95,9 @@ function draw_gameplay()
 end
 
 function draw_alarm()
-	for k,b in pairs(bros) do
-		if b.alarm then
-			rect(2,2,125,110,7)
-			return
-		end
+	if mainbro.alarm then
+		rect(2,2,125,110,7)
+		return
 	end
 end
 
@@ -153,6 +153,16 @@ function check_players()
 				end
 			end
 		end 
+	end
+end
+
+function update_mainbro()
+	for ix=0,7,1 do
+		local bro = bros[ix]
+		if bro and bro.alive then
+			mainbro=bro
+			return
+		end
 	end
 end
 
@@ -252,14 +262,8 @@ end
 function update_cam()
 	if camtarget then
 		set_cam(camtarget)
-		return
-	end
-	for ix=0,3,1 do
-		local bro = bros[ix]
-		if bro and bro.alive then
-			set_cam(bro)
-			return
-		end
+	else
+		set_cam(mainbro)
 	end
 end
 
@@ -307,7 +311,13 @@ end
 
 function update_bros()
 	for _,bro in pairs(bros) do
-		if (bro.alive) update_bro(bro)
+		if bro.alive then
+		 if bro.zip then
+		 	zip_bro(bro)
+		 else
+		 	update_bro(bro)
+		 end
+		end
 	end
 end
 
@@ -331,7 +341,8 @@ function return_bro()
 	bro.vacx = 1
 	bro.vacy = 0
 	bro.player = 0 --  player index, for multiplayer
-	bro.alarm=nil
+	bro.alarm = nil
+	bro.zip = false
 	return bro
 end
 
@@ -354,6 +365,19 @@ function make_player(ix)
 	bros[ix]=pl
 end
 
+function zip_bro(bro)
+	local dx = mainbro.x-bro.x
+	local dy = mainbro.y-bro.y
+	mag = sqrt(dx^2 + dy^2)
+	if mag<5 then
+		bro.zip=false
+	else
+		dx = 3*dx/mag
+		dy = 3*dy/mag
+		bro.x += dx
+		bro.y += dy
+	end
+end
 
 function update_bro(bro)
 	local dx = 0
@@ -409,6 +433,9 @@ function update_bro(bro)
 	-- see if trapped by alarm
 	check_alarm(bro)
 	
+	-- offscreen?
+	check_offscreen(bro)
+	
 	-- timer
 	bro.timer = max(0,bro.timer-1)
 	
@@ -417,6 +444,16 @@ function update_bro(bro)
 		sfx(0)
 	end
 		
+end
+
+function check_offscreen(bro)
+	if (bro==mainbro) return
+	if bro.x < camx-10 or
+		bro.x > camx+130 or
+		bro.y < camy-10 or
+		bro.y > camy+120 then
+		bro.zip=true
+	end
 end
 
 function check_vacuum(bro)
@@ -499,6 +536,9 @@ function draw_bro(bro)
 	--if hurt, flash
 	if (bro.timer%8>3) return
 	
+	-- zipping?
+	if (bro.zip and blink(1)) return
+	
 	--animate
 	local yup = 0
 	if bro.moved or bro.vacuum then
@@ -520,6 +560,7 @@ function hurt_bro(bro)
 	bro.timer = 60
 	if bro.health < 1 then
 		bro.alive=false
+		bro.alarm=nil
 		sfx(7)
 	else
 		sfx(6)
@@ -957,7 +998,7 @@ end
 function get_1up(item,bro)
 	sfx(5)
 	bro.health += regen_health
-	for bbro in all(bros) do
+	for _,bbro in pairs(bros) do
 		if (not bbro.alive) then
 			bbro.alive=true
 			bbro.health=regen_health
@@ -1010,14 +1051,9 @@ end
 
 function check_cameras()
 	for c in all(cameras) do
-		for ix=0,3,1 do
-			local b = bros[ix]
-			if b then
-				if collide(c,b,60) then
-					camtarget=c
-					return
-				end
-			end
+		if collide(c,mainbro,60) then
+			camtarget=c
+			return
 		end
 	end
 	camtarget=nil
