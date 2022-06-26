@@ -76,6 +76,7 @@ If you also want to be able to edit the game through your web browser, you can d
 - maze graphics (maybe stairs for floor texture?)
 - ~~hidden collectibles~~
 - run button
+- camera catches up to walking bro properly
 - 8 playable characters
 - more kinds of furniture 
 - function that pauses game and lets you switch characters
