@@ -68,16 +68,26 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~graphics screen~~
 - ~~camera only follows lead bro~~
 - ~~offscreen bros snap to lead bro~~
+- finilaze block layout of level
+    - clean up tiling
 
 ## nice to have
-- run button
-- more kinds of furniture 
-- function that pauses game and lets you switch
-- level music
-- hidden collectibles
+- make collision code more efficient? its starting to get CPU heavy
 - maze graphics (maybe stairs for floor texture?)
+- ~~hidden collectibles~~
+- run button
+- 8 playable characters
+- more kinds of furniture 
+- function that pauses game and lets you switch characters
+- level music
+- pretty up title and ending screens
+- better scene transition graphic
+- option to toggle kid mode
+
 
 
 ### cheatsheet
-
+To run the mapper cart:
+```
 pico8 -displays_x 2 -displays_y 2 mapper.p8
+```
