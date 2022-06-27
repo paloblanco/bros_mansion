@@ -47,6 +47,16 @@ function update_gameplay()
 	if rnd(ghost_rate) < 1 then
 		make_random_boo()
 	end
+	
+	boos_now = {}
+	for b in all(boos) do
+		if (collide(b,mainbro,128)) add(boos_now,b)
+	end
+	
+	items_now = {}
+	for i in all(items) do
+		if (collide(i,mainbro,128)) add(items_now,i)
+	end
  
 	update_bros()
 	update_boos()
@@ -172,13 +182,13 @@ function update_mainbro()
 end
 
 function draw_all_boos()
-	for b in all(boos) do
+	for b in all(boos_now) do
 		b.draw_me(b)
 	end
 end
 
 function draw_all_items()
-	for i in all(items) do
+	for i in all(items_now) do
 		if i.draw_me then
 			draw_shadow(i.x,i.y)
 			spr(i.sprite,i.x,i.y-2)
@@ -509,7 +519,7 @@ function _vacuum_walls(v)
 end
 
 function _vacuum_boos(v)
-	for b in all(boos) do
+	for b in all(boos_now) do
 		if not b.ball then
 			local dp=0
 			if (b.big or b.king) dp=8
@@ -533,7 +543,7 @@ function _vacuum_furniture(v)
 end
 
 function _vacuum_items(v)
-	for i in all(items) do
+	for i in all(items_now) do
  	if collide(v,i,v.d) then
  	 i.x += -v.dx*.25
  	 i.y += -v.dy*.25
@@ -598,7 +608,7 @@ end
 
 
 function collide_items(bro)
-	for i in all(items) do
+	for i in all(items_now) do
 		if collide(bro,i,8) then
 			i.get_me(i,bro)
 			del(items,i)
@@ -608,7 +618,7 @@ end
 
 function collide_boos(bro)
  if (bro.timer > 0) return
- for b in all(boos) do
+ for b in all(boos_now) do
   if collide(bro,b,6) then
   		if ((not b.king) and (not b.stomp)) del(boos,b)
   		if (not b.stomp) hurt_bro(bro)
@@ -681,9 +691,9 @@ function kill_boo(b)
 end
 
 function update_boos()
-	for b in all(boos) do
-		if (collide(b,mainbro,70)) b.update_me(b)
---		b.update_me(b)
+	for b in all(boos_now) do
+--		if (collide(b,mainbro,70)) b.update_me(b)
+		b.update_me(b)
 	end
 end
 
