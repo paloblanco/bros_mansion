@@ -68,7 +68,7 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~graphics screen~~
 - ~~camera only follows lead bro~~
 - ~~offscreen bros snap to lead bro~~
-- finilaze block layout of level
+- ~~finilaze block layout of level~~
     - clean up tiling
 
 ## nice to have
