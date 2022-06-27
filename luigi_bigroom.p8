@@ -28,9 +28,9 @@ end
 function make_game_variables()
 	-- game variables
 	-- things like speed and freq.
-	start_health = 30
+	start_health = 5
 	regen_health = 3 -- how much you come back with
-	bro_speed = 1.75 --.75 -- higher is faster!
+	bro_speed = 0.75 --.75 -- higher is faster!
 	ghost_speed = .5
 	ghost_dvel = 0--.02 -- how much ghosts get faster by
 	ghost_rate = 12000--90 --higher means less ghosts
@@ -38,7 +38,7 @@ function make_game_variables()
 	vacuum_range = 18--16
 	vacuum_width = 11
 	vacuum_speed = 0.5 --slowdown while using vacuum
-	damage = 10 -- vacuum damage
+	damage = 1 -- vacuum damage
 	camera_speed = 10 --lower is faster!
 end
 
@@ -682,7 +682,8 @@ end
 
 function update_boos()
 	for b in all(boos) do
-		b.update_me(b)
+		if (collide(b,mainbro,70)) b.update_me(b)
+--		b.update_me(b)
 	end
 end
 

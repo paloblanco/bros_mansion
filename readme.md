@@ -69,11 +69,20 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~camera only follows lead bro~~
 - ~~offscreen bros snap to lead bro~~
 - ~~finilaze block layout of level~~
-    - clean up tiling
+    - ~~clean up tiling~~
+- vacuum things close to you
 
 ## nice to have
+- correct floor appears when killing walls, big boo
+- fix enemy placement on blind corners
+- fix broken walls from re breaking
+- better arena graphic
+- option to toggle kid mode
+- reduce fire rate of ball boos
+- animated water
 - make collision code more efficient? its starting to get CPU heavy
-- maze graphics (maybe stairs for floor texture?)
+- helth displays for more than 2 players
+- ~~maze graphics (maybe stairs for floor texture?)~~
 - ~~hidden collectibles~~
 - run button
 - camera catches up to walking bro properly
@@ -83,7 +92,7 @@ If you also want to be able to edit the game through your web browser, you can d
 - level music
 - pretty up title and ending screens
 - better scene transition graphic
-- option to toggle kid mode
+
 
 
 
