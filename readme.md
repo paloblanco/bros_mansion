@@ -70,22 +70,26 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~offscreen bros snap to lead bro~~
 - ~~finilaze block layout of level~~
     - ~~clean up tiling~~
-- vacuum things close to you
+- ~~vacuum things close to you~~
 
 ## nice to have
-- correct floor appears when killing walls, big boo
+- ~~correct floor appears when killing walls, big boo~~
+- ~~better reward from big boos~~
+- continue at gameover
 - fix enemy placement on blind corners
-- fix broken walls from re breaking
+- ~~only display health of damaged enemies~~
+- better sound for beating big boos
+- ~~fix broken walls from re breaking~~
 - better arena graphic
-- option to toggle kid mode
+- ~~option to toggle kid mode~~
 - reduce fire rate of ball boos
-- animated water
-- make collision code more efficient? its starting to get CPU heavy
-- helth displays for more than 2 players
+- ~~animated water~~
+- ~~make collision code more efficient? its starting to get CPU heavy~~
+- ~~helth displays for more than 2 players~~
 - ~~maze graphics (maybe stairs for floor texture?)~~
 - ~~hidden collectibles~~
 - run button
-- camera catches up to walking bro properly
+- ~~camera catches up to walking bro properly~~
 - 8 playable characters
 - more kinds of furniture 
 - function that pauses game and lets you switch characters
