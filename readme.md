@@ -90,7 +90,8 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~hidden collectibles~~
 - run button
 - ~~camera catches up to walking bro properly~~
-- 8 playable characters
+- ~~8 playable characters~~
+- draw tails' tails
 - more kinds of furniture 
 - function that pauses game and lets you switch characters
 - level music
