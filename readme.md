@@ -78,7 +78,7 @@ If you also want to be able to edit the game through your web browser, you can d
 - continue at gameover
 - fix enemy placement on blind corners
 - ~~only display health of damaged enemies~~
-- better sound for beating big boos
+- ~~better sound for beating big boos~~
 - ~~fix broken walls from re breaking~~
 - better arena graphic
 - ~~option to toggle kid mode~~
