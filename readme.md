@@ -71,34 +71,52 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~finilaze block layout of level~~
     - ~~clean up tiling~~
 - ~~vacuum things close to you~~
+- ~~flip ghosts corrrectly~~
+- ~~both action buttons vacuum~~
+- ~~fix big wall going solid~~
+- ~~hallway near pond looks bad~~
+- ~~can see wall from upper right secret room~~
+- ~~put king boos near uppr right in final room~~
+- ~~random bouncing for king boo~~
+- ~~ball boos clipping through corners~~
+- ~~king boos eyes are transparent~~
+- ~~big boo should always face mainbro~~
+- ~~big print text~~
+
 
 ## nice to have
 - ~~correct floor appears when killing walls, big boo~~
 - ~~better reward from big boos~~
 - continue at gameover
+    - cost 50 coins
+    - another scene transition
 - fix enemy placement on blind corners
 - ~~only display health of damaged enemies~~
 - ~~better sound for beating big boos~~
 - ~~fix broken walls from re breaking~~
 - better arena graphic
 - ~~option to toggle kid mode~~
-- reduce fire rate of ball boos
+- ~~reduce fire rate of ball boos~~
 - ~~animated water~~
 - ~~make collision code more efficient? its starting to get CPU heavy~~
 - ~~helth displays for more than 2 players~~
 - ~~maze graphics (maybe stairs for floor texture?)~~
 - ~~hidden collectibles~~
-- run button
+
 - ~~camera catches up to walking bro properly~~
 - ~~8 playable characters~~
 - ~~draw tails' tails~~
 - more kinds of furniture 
 - function that pauses game and lets you switch characters
+    - a dedicated character switch screen would be good, then i can transition in and out
 - level music
 - pretty up title and ending screens
 - better scene transition graphic
+- Stars for finishing game under certain conditions
 
 
+## Canceled Ideas
+- run button
 
 
 ### cheatsheet
