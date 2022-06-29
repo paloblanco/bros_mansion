@@ -107,10 +107,10 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~8 playable characters~~
 - ~~draw tails' tails~~
 - more kinds of furniture 
-- function that pauses game and lets you switch characters
-    - a dedicated character switch screen would be good, then i can transition in and out
+- ~~function that pauses game and lets you switch characters~~
+    - ~~a dedicated character switch screen would be good, then i can transition in and out~~
 - level music
-- pretty up title and ending screens
+- pretty up title, ending, select screens
 - better scene transition graphic
 - Stars for finishing game under certain conditions
 

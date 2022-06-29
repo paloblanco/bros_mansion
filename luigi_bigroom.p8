@@ -87,7 +87,13 @@ function update_gameplay()
  	if (bro.alive) gamend = false
  end
  if (trophy) gamend = true
- if (gamend) start_end()
+ if gamend then
+  if trophy then
+   start_end()
+  else
+  	start_continue()
+  end
+ end
  
 	update_globals() -- don't play with this
 	check_players()	
@@ -245,6 +251,7 @@ function make_globals()
 	easy = false
 	easyflag = false
 	continues = 0 
+	continue = true
 	brocount = 0
 	
 	boos = {}
@@ -1655,8 +1662,6 @@ function update_title()
 		music(-1)
 		start_select()
 	end
---	check_players()
---	switch_bro()
 end
 
 function draw_title()
@@ -1726,7 +1731,7 @@ function draw_select()
 		if bro.name == "tails" then
 			spr(15,80-10*_-5,88+6)
 		end
-		spr(bro.sprite,80-10*_,88,1,2,bro.faceleft)
+		spr(bro.sprite,80-10*_,88,1,2)
 		oprint("p".._+1,80-10*_,73,bro.color,7)
 		oprint("⬆️",80-10*_,81,bro.color,7)
 		oprint("⬇️",80-10*_,107,bro.color,7)
@@ -1776,8 +1781,44 @@ function draw_end()
 	end
 end
 
+function start_continue()
+	music(-1)
+	fade_out()
+	_update60 = update_continue
+	_draw = draw_continue
+	
+	fade_in()
+	music(0)
+end
+
+function update_continue()
+	if btnp(2) or btnp(3) then
+		continue = not continue
+	end
+	if btnp(4) or btnp(5) then
+		if continue then
+			get_1up({},mainbro)
+			start_gameloop()
+		else
+			start_end()
+		end
+	end
+end
+
+function draw_continue()
+	cls(0)
+	cbigprint("continue?",30,8,7,2.5)
+	if continue then
+		coprint("< yes >",60,8,7)
+		coprint("no",69,8,1)
+	else
+		coprint("yes",60,8,1)
+		coprint("< no >",69,8,7)
+	end
+end
+
 function fade_in()
-	local imax=45
+	local imax=20
 	for i=0,imax,1 do
 		_draw()
 		local y = 127*(i/imax)
@@ -1787,18 +1828,13 @@ function fade_in()
 end
 
 function fade_out()
-	local imax=45
+	local imax=20
 	for i=0,imax,1 do
 		_draw()
 		local y = 127*(i/imax)
 		rectfill(0,0,127,y,1)
 		flip()
 	end
-end
-
-function fix_sprites()
-	-- replace fake walls with
-	-- their normal sprite
 end
 -->8
 -- menu fxns
@@ -1840,6 +1876,7 @@ function make_menu_items()
 		easyflag = true
 	end
 	menuitem(1,elabel,switch_difficulty)
+	menuitem(2,"change characters",start_select)
 end
 __gfx__
 111c111c000000000033373000000000000000000000000000000000000000000009090000000000000000000000000009000009000000000000000000007000
