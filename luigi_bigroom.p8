@@ -1762,9 +1762,9 @@ function start_end()
 end
 
 function update_end()
-	if btnp(4) or btnp(5) then
-		run()
-	end
+	--if btnp(4) or btnp(5) then
+	--	run()
+	--end
 end
 
 function draw_end()
@@ -1783,12 +1783,11 @@ end
 
 function start_continue()
 	music(-1)
-	fade_out()
+	fade_out_bad(0)
 	_update60 = update_continue
 	_draw = draw_continue
-	
-	fade_in()
-	music(0)
+	fade_in(0)
+	-- music ???
 end
 
 function update_continue()
@@ -1798,6 +1797,8 @@ function update_continue()
 	if btnp(4) or btnp(5) then
 		if continue then
 			get_1up({},mainbro)
+			wait(45)
+			dock_coins(50)
 			start_gameloop()
 		else
 			start_end()
@@ -1805,9 +1806,32 @@ function update_continue()
 	end
 end
 
+function dock_coins(cc)
+	_draw()
+	coprint("coins: "..coin_count,80,9,1)
+	wait(30)
+	for i=1,cc,1 do
+		if (coin_count>0) sfx(14)	
+		coin_count += -1
+		coin_count = max(0,coin_count)
+		_draw()
+		coprint("coins: "..coin_count,80,9,1)
+		coprint("-"..cc,88,8,1)
+		wait(1)		
+	end
+	wait(60)
+end
+
+function wait(frames)
+	for i=1,frames,1 do
+		flip()
+	end
+end
+
 function draw_continue()
 	cls(0)
-	cbigprint("continue?",30,8,7,2.5)
+	local yy = 30 + 4*sin(t()/2)
+	cbigprint("continue?",yy,8,7,2.5)
 	if continue then
 		coprint("< yes >",60,8,7)
 		coprint("no",69,8,1)
@@ -1817,22 +1841,35 @@ function draw_continue()
 	end
 end
 
-function fade_in()
+function fade_in(c)
+	c = c or 1
 	local imax=20
 	for i=0,imax,1 do
 		_draw()
 		local y = 127*(i/imax)
-		rectfill(0,y,127,127,1)
+		rectfill(0,y,127,127,c)
 		flip()
 	end
 end
 
-function fade_out()
+function fade_out(c)
+	c = c or 1
 	local imax=20
 	for i=0,imax,1 do
 		_draw()
 		local y = 127*(i/imax)
 		rectfill(0,0,127,y,1)
+		flip()
+	end
+end
+
+function fade_out_bad(c)
+	c = c or 1
+	local imax=60
+	for i=0,imax,1 do
+		_draw()
+		local y = 64*(i/imax)
+		rectfill(64-y,64-y,64+y,64+y,c)
 		flip()
 	end
 end
