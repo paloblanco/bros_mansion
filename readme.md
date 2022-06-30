@@ -87,9 +87,9 @@ If you also want to be able to edit the game through your web browser, you can d
 ## nice to have
 - ~~correct floor appears when killing walls, big boo~~
 - ~~better reward from big boos~~
-- continue at gameover
-    - cost 50 coins
-    - another scene transition
+- ~~continue at gameover~~
+    - ~~cost 50 coins~~
+    - ~~another scene transition~~
 - fix enemy placement on blind corners
 - ~~only display health of damaged enemies~~
 - ~~better sound for beating big boos~~
