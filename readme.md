@@ -94,7 +94,7 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~only display health of damaged enemies~~
 - ~~better sound for beating big boos~~
 - ~~fix broken walls from re breaking~~
-- better arena graphic
+- ~~better arena graphic~~
 - ~~option to toggle kid mode~~
 - ~~reduce fire rate of ball boos~~
 - ~~animated water~~
@@ -109,14 +109,15 @@ If you also want to be able to edit the game through your web browser, you can d
 - more kinds of furniture 
 - ~~function that pauses game and lets you switch characters~~
     - ~~a dedicated character switch screen would be good, then i can transition in and out~~
-- level music
-- pretty up title, ending, select screens
+- ~~pretty up title, ending, select screens~~
+- ~~fix ending screen~~
 - better scene transition graphic
-- Stars for finishing game under certain conditions
+- ~~Stars for finishing game under certain conditions~~
 
 
 ## Canceled Ideas
 - run button
+- level music
 
 
 ### cheatsheet
