@@ -111,7 +111,7 @@ If you also want to be able to edit the game through your web browser, you can d
     - ~~a dedicated character switch screen would be good, then i can transition in and out~~
 - ~~pretty up title, ending, select screens~~
 - ~~fix ending screen~~
-- better scene transition graphic
+- ~~better scene transition graphic~~
 - ~~Stars for finishing game under certain conditions~~
 
 
