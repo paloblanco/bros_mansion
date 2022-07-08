@@ -106,7 +106,8 @@ If you also want to be able to edit the game through your web browser, you can d
 - ~~camera catches up to walking bro properly~~
 - ~~8 playable characters~~
 - ~~draw tails' tails~~
-- more kinds of furniture 
+- ~~more kinds of furniture~~ 
+- chime when you enter and leave an alarm
 - ~~function that pauses game and lets you switch characters~~
     - ~~a dedicated character switch screen would be good, then i can transition in and out~~
 - ~~pretty up title, ending, select screens~~
