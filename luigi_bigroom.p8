@@ -658,8 +658,8 @@ function draw_bro(bro)
 		end
 	end
 
-	-- tails?
-	if bro.name == "tails" then
+	-- toby?
+	if bro.name == "toby" then
 		if bro.faceleft then
 			spr(15,bro.x+5,bro.y-4-yup,1,1,bro.faceleft)
 		else
@@ -1714,7 +1714,7 @@ function draw_title()
 	local yup = 0
 	if (60*t()%10 < 5) yup=1
 	for i,b in pairs(bro_types) do
-		if b.name == "tails" then
+		if b.name == "toby" then
 			spr(15,112-12*i-5,88+6-yup)
 		end
 		spr(b.sprite+yup,112-12*i,88,1,2)
@@ -1791,8 +1791,8 @@ function draw_select()
 	palt()
 	--bros
 	for _,bro in pairs(bros) do
-		if bro.name == "tails" then
-			spr(15,80-10*_-5,88+6)
+		if bro.name == "toby" then
+			spr(15,80-12*_-5,88+6)
 		end
 		spr(bro.sprite,80-12*_,88,1,2)
 		oprint("p".._+1,80-12*_,73,bro.color,7)
@@ -1875,7 +1875,7 @@ function draw_end()
 	if (60*t()%10 < 5) yup=1
 	for _,bro in pairs(bros) do
 		local xs = 60+(brocount-1)*8
-		if bro.name == "tails" then
+		if bro.name == "toby" then
 			spr(15,xs-16*_-5,104+6-yup)
 		end
 		spr(bro.sprite+yup,xs-16*_,104,1,2)
